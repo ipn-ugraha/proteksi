@@ -106,8 +106,10 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
 .t-dist{background:#f1f5f9;color:var(--muted);}
 .t-other{background:#f0fdf4;color:#166534;}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
-.d-ok{background:var(--green);}
-.d-no{background:#e2e8f0;}
+.dot.d-ok{background:var(--green);}
+.dot.d-no{background:#e2e8f0;}
+.dot.has-tip{width:12px;height:12px;transition:transform .1s;}
+.dot.has-tip:hover{transform:scale(1.5);}
 .skor-bar{display:flex;gap:2px;margin-top:3px;justify-content:center;}
 .ss{width:13px;height:4px;border-radius:2px;}
 .ss-on{background:var(--blue);}
@@ -722,12 +724,32 @@ function renderTable(data) {
     if (r.jenis_n==='TIDAK TERSEDIA MPU') return `<span class="tag t-other">Tdk Tersedia</span>`;
     return r.jenis ? `<span class="tag">${r.jenis}</span>` : '–';
   };
+
+  // Dot dengan tooltip tanggal realisasi
+  const dotCell = (val, label) => {
+    const done = ok(val);
+    if (done) {
+      // val bisa berupa tanggal dd/mm/yyyy atau nama bulan → tampilkan apa adanya
+      const tip = `✅ ${label}: ${val}`;
+      return `<span class="dot d-ok has-tip" title="${tip}" style="cursor:default"></span>`;
+    }
+    return `<span class="dot d-no has-tip" title="⏳ ${label}: belum ditarik" style="cursor:default"></span>`;
+  };
+
   body.innerHTML = data.map(r => {
     const clr = UPT_CLR[r.upt_s]||'#94a3b8';
-    const dot = v => `<span class="dot ${ok(v)?'d-ok':'d-no'}"></span>`;
     const segs = [ok(r.ja),ok(r.jb),ok(r.jd),ok(r.je)]
       .map(s=>`<div class="ss ${s?'ss-on':'ss-off'}"></div>`).join('');
     const sc = r.skor===4?'var(--green)':r.skor===0?'var(--red)':'var(--amber)';
+
+    // Tooltip gabungan untuk kolom skor
+    const tipLines = [
+      `FO Fail → Ann.   : ${ok(r.ja) ? r.ja : 'belum'}`,
+      `I Diff → Ann.    : ${ok(r.jb) ? r.jb : 'belum'}`,
+      `FO Fail → Dash.  : ${ok(r.jd) ? r.jd : 'belum'}`,
+      `I Diff → Dash.   : ${ok(r.je) ? r.je : 'belum'}`,
+    ].join('&#10;');
+
     return `<tr>
       <td style="white-space:nowrap"><span class="udot" style="background:${clr}"></span>${r.upt_s}</td>
       <td style="white-space:nowrap;color:var(--muted)">${r.ultg.replace('ULTG ','')}</td>
@@ -735,14 +757,14 @@ function renderTable(data) {
       <td style="max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.bay}">${r.bay}</td>
       <td><span class="tag ${r.kritikal==='YA'?'t-ya':'t-no'}">${r.kritikal||'–'}</span></td>
       <td>${jenisTag(r)}</td>
-      <td style="text-align:center">${dot(r.ja)}</td>
-      <td style="text-align:center">${dot(r.jb)}</td>
-      <td style="text-align:center">${dot(r.jd)}</td>
-      <td style="text-align:center">${dot(r.je)}</td>
+      <td style="text-align:center">${dotCell(r.ja,'FO Fail → Annunciator')}</td>
+      <td style="text-align:center">${dotCell(r.jb,'I Diff → Annunciator')}</td>
+      <td style="text-align:center">${dotCell(r.jd,'FO Fail → Dashboard')}</td>
+      <td style="text-align:center">${dotCell(r.je,'I Diff → Dashboard')}</td>
       <td style="font-size:11px;color:var(--muted);white-space:nowrap">${r.jc||'–'}</td>
       <td style="font-size:11px;color:var(--muted);white-space:nowrap">${r.jf||'–'}</td>
       <td style="text-align:center">
-        <b style="color:${sc}">${r.skor}/4</b>
+        <b style="color:${sc};cursor:help" title="${tipLines}">${r.skor}/4</b>
         <div class="skor-bar">${segs}</div>
       </td>
     </tr>`;
@@ -783,7 +805,10 @@ async function init() {
     $('status-badge').textContent = `✓ ${ALL.length} bay dimuat`;
     $('status-badge').className = 'badge-live';
 
-    renderAll();
+    // Default filter: Kritikal = YA, Jenis = LCD
+    $('f-krit').value = 'YA';
+    $('f-jenis').value = 'LCD';
+    applyF();
   } catch(err) {
     $('loader').innerHTML = `<div style="color:#dc2626;font-weight:600">❌ Gagal memuat data</div>
       <p style="margin-top:8px;color:#64748b;font-size:13px">${err.message}</p>
