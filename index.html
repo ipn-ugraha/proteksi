@@ -7,7 +7,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 
 <script>
-// docx.js UMD bundle (inline)
+// docx.js — lazy load saat tombol diklik (bukan saat halaman load)
+window._docxBlobUrl = null;
+window._docxLoaded  = false;
+window._docxLoading = false;
+
+async function _loadDocxLib() {
+  if (window._docxLoaded) return;          // sudah dimuat
+  if (window._docxLoading) {               // sedang dimuat oleh panggilan lain
+    await new Promise(r => {
+      const id = setInterval(() => { if (window._docxLoaded) { clearInterval(id); r(); } }, 50);
+    });
+    return;
+  }
+  window._docxLoading = true;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = window._docxBlobUrl;           // akan di-set setelah bundle di-inject
+    s.onload  = () => { window._docxLoaded = true; resolve(); };
+    s.onerror = () => reject(new Error('Gagal memuat library docx'));
+    document.head.appendChild(s);
+  });
+}
+</script>
+<script id="docx-bundle" type="text/plain">
 (function(global, factory) {
 	typeof exports === "object" && typeof module !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, factory(global.docx = {}));
 })(this, function(exports) {
@@ -32750,6 +32773,16 @@ while (n === a[++i] && n === a[++i] && n === a[++i] && n === a[++i] && n === a[+
 	exports.unsignedDecimalNumber = unsignedDecimalNumber;
 });
 
+
+</script>
+<script>
+// Buat Blob URL dari bundle teks agar tidak di-parse saat load awal
+(function(){
+  const el = document.getElementById('docx-bundle');
+  const src = el.textContent;
+  const blob = new Blob([src], {type:'application/javascript'});
+  window._docxBlobUrl = URL.createObjectURL(blob);
+})();
 </script>
 <style>
 :root{
@@ -33671,6 +33704,12 @@ async function exportWord() {
   await new Promise(r => setTimeout(r, 50));
 
   try {
+    // Muat library docx.js secara lazy (hanya saat tombol diklik)
+    setW(2, 'Memuat library docx.js…');
+    await _loadDocxLib();
+    setW(5, 'Library siap…');
+    await new Promise(r => setTimeout(r, 30));
+
     const {
       Document, Packer, Paragraph, Table, TableRow, TableCell,
       TextRun, HeadingLevel, AlignmentType, BorderStyle,
