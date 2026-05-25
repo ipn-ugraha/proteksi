@@ -241,22 +241,37 @@ footer a{color:var(--blue);}
   </div>
 </div>
 
-<!-- Charts row 2 -->
+<!-- Charts row 2 — UPT: 2 chart terpisah -->
 <div class="grid2">
   <div class="chart-box">
-    <h3>Status Penarikan per UPT — LCD</h3>
-    <p class="desc">4 indikasi per UPT: sudah vs belum (hanya bay LCD)</p>
-    <div class="chart-wrap" style="height:230px">
-      <canvas id="ch-upt" role="img" aria-label="Grouped bar status per UPT"></canvas>
+    <h3>Status Penarikan Annunciator per UPT</h3>
+    <p class="desc">FO Fail & I Diff → Annunciator (JA & JB) · hanya bay LCD</p>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="ch-upt-ann" role="img" aria-label="Grouped bar status annunciator per UPT"></canvas>
     </div>
     <div class="leg">
-      <span class="li"><span class="ls" style="background:#2563eb"></span>FO Fail Ann.</span>
-      <span class="li"><span class="ls" style="background:#dc2626"></span>I Diff Ann.</span>
-      <span class="li"><span class="ls" style="background:#16a34a"></span>FO Fail Dash.</span>
-      <span class="li"><span class="ls" style="background:#7c3aed"></span>I Diff Dash.</span>
+      <span class="li"><span class="ls" style="background:#2563eb"></span>FO Fail → Ann. (JA)</span>
+      <span class="li"><span class="ls" style="background:#dc2626"></span>I Diff → Ann. (JB)</span>
+      <span class="li"><span class="ls" style="background:#e2e8f0"></span>Belum</span>
     </div>
   </div>
   <div class="chart-box">
+    <h3>Status Penarikan Dashboard &amp; EWS per UPT</h3>
+    <p class="desc">FO Fail & I Diff → Dashboard & EWS (JD & JE) · hanya bay LCD</p>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="ch-upt-ews" role="img" aria-label="Grouped bar status dashboard EWS per UPT"></canvas>
+    </div>
+    <div class="leg">
+      <span class="li"><span class="ls" style="background:#16a34a"></span>FO Fail → Dashboard (JD)</span>
+      <span class="li"><span class="ls" style="background:#7c3aed"></span>I Diff → Dashboard (JE)</span>
+      <span class="li"><span class="ls" style="background:#e2e8f0"></span>Belum</span>
+    </div>
+  </div>
+</div>
+
+<!-- Matrix full width -->
+<div class="grid2">
+  <div class="chart-box full">
     <h3>Matriks Progress per UPT</h3>
     <p class="desc">Persentase bay LCD selesai per kombinasi UPT × indikasi</p>
     <div class="matrix-wrap">
@@ -267,8 +282,6 @@ footer a{color:var(--blue);}
     </div>
   </div>
 </div>
-
-<!-- Timeline (full width) -->
 <div class="grid2">
   <div class="chart-box full">
     <h3>Timeline Realisasi &amp; Target Penarikan ke Dashboard &amp; EWS</h3>
@@ -459,7 +472,8 @@ function renderAll() {
   renderCards(lcd);
   renderProg(lcd);
   renderJenisPie(FILT);
-  renderUptChart(lcd);
+  renderUptAnnChart(lcd);
+  renderUptEwsChart(lcd);
   renderMatrix(lcd);
   renderTimeline(lcd);
   renderTable(FILT);
@@ -524,34 +538,56 @@ function renderJenisPie(data) {
   ].map(x=>`<span class="li"><span class="ls" style="background:${x.c}"></span>${x.l}: ${x.n}</span>`).join('');
 }
 
-// UPT grouped bar (4 indikasi)
-function renderUptChart(lcd) {
+// Helper: buat stacked bar chart annunciator atau dashboard per UPT
+function makeUptChart(canvasId, lcd, keyA, keyB, colorA, colorB, labelA, labelB, chartKey) {
   const upts = [...new Set(lcd.map(r=>r.upt_s))].sort();
-  const jaD = upts.map(u=>lcd.filter(r=>r.upt_s===u&&ok(r.ja)).length);
-  const jbD = upts.map(u=>lcd.filter(r=>r.upt_s===u&&ok(r.jb)).length);
-  const jdD = upts.map(u=>lcd.filter(r=>r.upt_s===u&&ok(r.jd)).length);
-  const jeD = upts.map(u=>lcd.filter(r=>r.upt_s===u&&ok(r.je)).length);
-  if (CHARTS.upt) CHARTS.upt.destroy();
-  CHARTS.upt = new Chart($('ch-upt'), {
-    type:'bar',
-    data:{
-      labels:upts,
-      datasets:[
-        {label:'FO Fail Ann.',data:jaD,backgroundColor:'#2563eb',borderRadius:2},
-        {label:'I Diff Ann.',data:jbD,backgroundColor:'#dc2626',borderRadius:2},
-        {label:'FO Fail Dash.',data:jdD,backgroundColor:'#16a34a',borderRadius:2},
-        {label:'I Diff Dash.',data:jeD,backgroundColor:'#7c3aed',borderRadius:2},
+  const totals = upts.map(u => lcd.filter(r=>r.upt_s===u).length);
+  const dA = upts.map(u => lcd.filter(r=>r.upt_s===u && ok(r[keyA])).length);
+  const dB = upts.map(u => lcd.filter(r=>r.upt_s===u && ok(r[keyB])).length);
+  // "Belum" = total dikurangi yang sudah (untuk layer abu paling bawah, stacked)
+  const dBelum = upts.map((u,i) => Math.max(0, totals[i] - dA[i] - dB[i]));
+
+  if (CHARTS[chartKey]) CHARTS[chartKey].destroy();
+  CHARTS[chartKey] = new Chart($(canvasId), {
+    type: 'bar',
+    data: {
+      labels: upts,
+      datasets: [
+        { label: labelA,   data: dA,     backgroundColor: colorA,   borderRadius: 2, stack: 's' },
+        { label: labelB,   data: dB,     backgroundColor: colorB,   borderRadius: 2, stack: 's' },
+        { label: 'Belum',  data: dBelum, backgroundColor: '#e2e8f0', borderRadius: 2, stack: 's' },
       ]
     },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
-      scales:{
-        x:{ticks:{font:{size:10}},grid:{display:false}},
-        y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}}
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: ctx => ctx.raw > 0 ? `${ctx.dataset.label}: ${ctx.raw} bay` : null
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: { stacked: true, ticks: { font: { size: 10 } }, grid: { color: 'rgba(0,0,0,.04)' },
+             title: { display: true, text: 'bay', font: { size: 9 }, color: '#94a3b8' } }
       }
     }
   });
+}
+
+// UPT Annunciator chart (JA + JB)
+function renderUptAnnChart(lcd) {
+  makeUptChart('ch-upt-ann', lcd, 'ja', 'jb', '#2563eb', '#dc2626',
+    'FO Fail → Ann. (JA)', 'I Diff → Ann. (JB)', 'uptann');
+}
+
+// UPT Dashboard & EWS chart (JD + JE)
+function renderUptEwsChart(lcd) {
+  makeUptChart('ch-upt-ews', lcd, 'jd', 'je', '#16a34a', '#7c3aed',
+    'FO Fail → Dashboard (JD)', 'I Diff → Dashboard (JE)', 'uptews');
 }
 
 // Matrix
