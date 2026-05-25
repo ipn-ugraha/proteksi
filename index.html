@@ -124,17 +124,11 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
     <p>Penarikan Indikasi FO Fail &amp; I Diff → Annunciator dan Dashboard &amp; EWS</p>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <button class="btn-word" onclick="exportWord(true)" title="Laporan Word dengan grafik">
+    <button class="btn-word" onclick="exportWord()" title="Laporan Word — data live dari Google Sheets">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
       </svg>
-      Word + Grafik
-    </button>
-    <button class="btn-word" onclick="exportWord(false)" title="Laporan Word tanpa grafik (lebih ringan)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
-      </svg>
-      Word (Tabel)
+      Laporan Word
     </button>
     <span id="status-badge" class="badge-live">⏳ Memuat data…</span>
   </div>
@@ -486,7 +480,8 @@ init();
 
 
 // ── EXPORT WORD (global scope) ───────────────────────────────────────────
-async function exportWord(withCharts=true) {
+async function exportWord(withCharts) {
+  // ── Gunakan docx.js via lazy load ──────────────────────────────────────
   const modal = document.getElementById('word-modal');
   modal.classList.add('show');
   const setW = (pct, msg) => {
@@ -494,241 +489,683 @@ async function exportWord(withCharts=true) {
     document.getElementById('word-prog-label').textContent = pct + '%';
     if (msg) document.getElementById('word-modal-msg').textContent = msg;
   };
-  setW(2,'Memuat library docx.js…');
-  await new Promise(r=>setTimeout(r,50));
+  setW(2,'Memuat library…');
+  await new Promise(r => setTimeout(r,50));
+
   try {
     await _loadDocxLib();
-    setW(6,'Library siap…');
-    await new Promise(r=>setTimeout(r,30));
+    const {
+      Document, Packer, Paragraph, Table, TableRow, TableCell,
+      TextRun, AlignmentType, BorderStyle, WidthType, ShadingType,
+      TableLayoutType, VerticalAlign, Header, Footer, PageNumber,
+      convertMillimetersToTwip, LevelFormat, HeadingLevel
+    } = window.docx;
 
-    const {Document,Packer,Paragraph,Table,TableRow,TableCell,TextRun,HeadingLevel,
-           AlignmentType,BorderStyle,WidthType,ShadingType,TableLayoutType,
-           Header,Footer,PageNumber,convertMillimetersToTwip,ImageRun} = window.docx;
+    setW(8,'Menyiapkan data…');
+    await new Promise(r => setTimeout(r,30));
 
-    const fUpt=$('f-upt').value, fKrit=$('f-krit').value, fJenis=$('f-jenis').value, fProg=$('f-prog').value;
-    const filterDesc=[fUpt?`UPT: ${fUpt}`:'',fKrit?`Kritikal: ${fKrit}`:'',fJenis?`Jenis: ${fJenis}`:'',fProg!==''?`Skor: ${fProg}`:''].filter(Boolean).join('  ·  ')||'Semua data';
+    // ── Data dari FILT (live dari Google Sheets) ──────────────────────────
+    const lcd   = FILT.filter(r => r.jenis_n === 'LCD');
+    const krit  = lcd.filter(r => r.kritikal === 'YA');
+    const total = krit.length;
+    const jaOk  = krit.filter(r => ok(r.ja)).length;
+    const jbOk  = krit.filter(r => ok(r.jb)).length;
+    const jdOk  = krit.filter(r => ok(r.jd)).length;
+    const jeOk  = krit.filter(r => ok(r.je)).length;
+    const s4Ok  = krit.filter(r => r.skor === 4).length;
 
-    const BASE=FILT, lcd=BASE.filter(r=>r.jenis_n==='LCD'), total=lcd.length;
-    const jaOk=lcd.filter(r=>ok(r.ja)).length, jbOk=lcd.filter(r=>ok(r.jb)).length;
-    const jdOk=lcd.filter(r=>ok(r.jd)).length, jeOk=lcd.filter(r=>ok(r.je)).length;
-    const s4=lcd.filter(r=>r.skor===4).length, krit=lcd.filter(r=>r.kritikal==='YA').length;
+    // Filter aktif
+    const fUpt  = $('f-upt').value;
+    const fKrit = $('f-krit').value;
+    const fJenis= $('f-jenis').value;
+    const filterDesc = [
+      fUpt   ? 'UPT: '+fUpt   : '',
+      fKrit  ? 'Kritikal: '+fKrit : '',
+      fJenis ? 'Jenis: '+fJenis : '',
+    ].filter(Boolean).join('  ·  ') || 'Semua data';
 
-    const upt_list=[...new Set(BASE.map(r=>r.upt_s))].filter(Boolean).sort();
-    const upt_data=upt_list.map(u=>{const s=lcd.filter(r=>r.upt_s===u);return{upt:u,tot:s.length,ja:s.filter(r=>ok(r.ja)).length,jb:s.filter(r=>ok(r.jb)).length,jd:s.filter(r=>ok(r.jd)).length,je:s.filter(r=>ok(r.je)).length,s4:s.filter(r=>r.skor===4).length};}).filter(r=>r.tot>0);
+    const upt_list = [...new Set(krit.map(r=>r.upt_s))].filter(Boolean).sort();
+    const upt_data = upt_list.map(u => {
+      const s = krit.filter(r=>r.upt_s===u);
+      return { upt:u, tot:s.length,
+        ja:s.filter(r=>ok(r.ja)).length, jb:s.filter(r=>ok(r.jb)).length,
+        jd:s.filter(r=>ok(r.jd)).length, je:s.filter(r=>ok(r.je)).length,
+        s4:s.filter(r=>r.skor===4).length };
+    });
 
-    const TODAY=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-    const FILE_DATE=new Date().toISOString().slice(0,10);
-
-    setW(12, withCharts ? 'Mengambil gambar grafik…' : 'Menyiapkan tabel…');
-    await new Promise(r=>setTimeout(r,80));
-    async function captureChart(id) {
-      const canvas = document.getElementById(id);
-      if (!canvas) return null;
-      try {
-        // Resize ke lebar max 900px untuk kurangi ukuran file
-        const MAX_W = 600;
-        let w = canvas.width, h = canvas.height;
-        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
-        const c2 = document.createElement('canvas');
-        c2.width = w; c2.height = h;
-        const ctx2 = c2.getContext('2d');
-        ctx2.fillStyle = '#ffffff';
-        ctx2.fillRect(0, 0, w, h);
-        ctx2.drawImage(canvas, 0, 0, w, h);
-        const d = c2.toDataURL('image/jpeg', 0.75);
-        const b64 = d.replace('data:image/jpeg;base64,','');
-        console.log(`Chart ${id}: ${w}x${h}, b64 size=${b64.length} bytes`);
-        return { base64: b64, w, h, type:'jpeg' };
-      } catch(e) { return null; }
+    // Timeline dari data live
+    const realTL = {}, tgtTL = {};
+    for (const r of krit) {
+      const ymR = parseYM(r.jd) || parseYM(r.je);
+      const ymT = parseYM(r.jf);
+      if (ymR) { const k=`${ymR.yr}-${String(ymR.mo).padStart(2,'0')}`; realTL[k]=(realTL[k]||0)+1; }
+      else if (ymT) { const k=`${ymT.yr}-${String(ymT.mo).padStart(2,'0')}`; tgtTL[k]=(tgtTL[k]||0)+1; }
     }
-    const imgs={};
-    if (withCharts) {
-      for(const[k,id]of Object.entries({jenis:'ch-jenis',uptAnn:'ch-upt-ann',uptEws:'ch-upt-ews',tlAnn:'ch-tl-ann',tlEws:'ch-tl-ews'})){
-        imgs[k]=await captureChart(id); setW(12+Object.keys(imgs).length*5,''); await new Promise(r=>setTimeout(r,30));
-      }
-    }
+    const tlKeys = [...new Set([...Object.keys(realTL),...Object.keys(tgtTL)])].sort();
 
-    const NAVY='1e3a5f',BLUE='2563eb',GREEN='16a34a',RED='dc2626',AMBER='d97706',PURPLE='7c3aed',GRAY='64748b',LGRAY='f1f5f9',WHITE='FFFFFF';
-    const cm=v=>convertMillimetersToTwip(v*10);
-    const sep='// '+'='.repeat(59);
+    const TODAY = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+    const FILE_DATE = new Date().toISOString().slice(0,10);
+    const p2 = (n,t) => t ? Math.round(n/t*100)+'%' : '0%';
 
-    const secHdr=(num,title)=>new Paragraph({children:[new TextRun({text:`${num}  ${title}`,color:WHITE,bold:true,size:26})],shading:{type:ShadingType.SOLID,color:NAVY,fill:NAVY},spacing:{before:280,after:140},indent:{left:cm(0.3)}});
-    const h2p=txt=>new Paragraph({text:txt,heading:HeadingLevel.HEADING_2,spacing:{before:160,after:80}});
-    const bodyP=txt=>new Paragraph({children:[new TextRun({text:txt,size:20,color:'374151'})],spacing:{after:100},alignment:AlignmentType.JUSTIFIED});
-    const blt=txt=>new Paragraph({children:[new TextRun({text:txt,size:20,color:'374151'})],bullet:{level:0},spacing:{after:60}});
+    // ── Konstanta Word ─────────────────────────────────────────────────────
+    const cm = v => convertMillimetersToTwip(v*10);
+    const CW = cm(16); // content width: A4 21cm - 2.5cm*2
+    const NAVY='1E3A5F', BLUE='2563EB', GREEN='16A34A', RED='DC2626';
+    const AMBER='D97706', GRAY='64748B', WHITE='FFFFFF', LGRAY='F1F5F9';
+    const DKGRAY='374151', TEAL='0891B2';
 
-    const hdrCell=(txt,w)=>new TableCell({children:[new Paragraph({children:[new TextRun({text:txt,color:WHITE,bold:true,size:17})],alignment:AlignmentType.CENTER})],shading:{type:ShadingType.SOLID,color:NAVY,fill:NAVY},width:{size:w||1000,type:WidthType.DXA},margins:{top:55,bottom:55,left:80,right:80}});
-    const dataCell=(txt,opts={})=>new TableCell({children:[new Paragraph({children:[new TextRun({text:String(txt||'–'),size:17,color:opts.color||'1f2937',bold:opts.bold||false})],alignment:opts.align||AlignmentType.CENTER})],shading:opts.shading?{type:ShadingType.SOLID,color:opts.shading,fill:opts.shading}:undefined,width:{size:opts.w||1000,type:WidthType.DXA},margins:{top:45,bottom:45,left:80,right:80}});
-    const buildTable=(headers,rows,colWidths)=>new Table({width:{size:100,type:WidthType.PERCENTAGE},layout:TableLayoutType.FIXED,rows:[new TableRow({children:headers.map((h,i)=>hdrCell(h,colWidths?.[i])),tableHeader:true}),...rows.map((row,ri)=>new TableRow({children:row.map((cell,ci)=>dataCell(cell,{shading:ri%2===1?LGRAY:undefined,align:ci===0?AlignmentType.LEFT:AlignmentType.CENTER,w:colWidths?.[ci]}))}))]});
-    const EMU_PER_MM = 36000;
-    // Lebar konten A4 = 210mm - margin 2x25mm = 160mm
-    const PAGE_CONTENT_W_MM = 160;
-    const PAGE_CONTENT_W_EMU = PAGE_CONTENT_W_MM * EMU_PER_MM;
+    const border = (clr='CCCCCC') => ['top','bottom','left','right'].reduce((o,s)=>{
+      o[s]={style:BorderStyle.SINGLE,size:4,color:clr}; return o;},{});
+    const noBorder = () => ['top','bottom','left','right'].reduce((o,s)=>{
+      o[s]={style:BorderStyle.NONE,size:0,color:'FFFFFF'}; return o;},{});
+    const cm2 = {top:60,bottom:60,left:100,right:100};
+    const cm3 = {top:80,bottom:80,left:120,right:120};
 
-    // chartImg: masukkan gambar chart ke Word dengan ukuran otomatis sesuai halaman
-    // maxWpct: persentase lebar konten halaman (default 100% = full width)
-    const chartImg = (imgData, caption, maxWpct=100) => {
-      if (!imgData) return [new Paragraph({
-        children:[new TextRun({text:`[Grafik: ${caption}]`,size:16,color:GRAY,italics:true})],
-        spacing:{after:80}
-      })];
-      // Hitung ukuran dalam EMU berdasarkan % lebar konten halaman
-      const targetWemu = Math.round(PAGE_CONTENT_W_EMU * maxWpct / 100);
-      const ratio = imgData.h / imgData.w;
-      const targetHemu = Math.round(targetWemu * ratio);
-      const items = [];
-      try {
-        items.push(new Paragraph({
-          children:[new ImageRun({
-            data: (function(){
-              const b=atob(imgData.base64);
-              const arr=new Uint8Array(b.length);
-              for(let i=0;i<b.length;i++) arr[i]=b.charCodeAt(i);
-              return arr;
-            })(),
-            transformation: { width: targetWemu, height: targetHemu },
-            type: imgData.type || 'jpeg',
-          })],
-          alignment: AlignmentType.CENTER,
-          spacing: {before:60, after:40},
-        }));
-      } catch(e) {
-        items.push(new Paragraph({children:[new TextRun({text:`[Grafik: ${caption}]`,size:16,color:GRAY,italics:true})]}));
-      }
-      items.push(new Paragraph({
-        children:[new TextRun({text:caption, size:16, color:GRAY, italics:true})],
-        alignment: AlignmentType.CENTER,
-        spacing: {after:120},
-      }));
-      return items;
+    const hCell = (txt,w,sz=9) => new TableCell({
+      width:{size:w,type:WidthType.DXA}, borders:border(NAVY),
+      shading:{type:ShadingType.CLEAR,fill:NAVY},
+      margins:cm2, verticalAlign:VerticalAlign.CENTER,
+      children:[new Paragraph({alignment:AlignmentType.CENTER,
+        children:[new TextRun({text:String(txt),color:WHITE,bold:true,size:sz*2,font:'Arial'})]})]
+    });
+
+    const dCell = (txt,w,opts={}) => new TableCell({
+      width:{size:w,type:WidthType.DXA},
+      borders:border(opts.bc||'DDDDDD'),
+      shading:opts.fill?{type:ShadingType.CLEAR,fill:opts.fill}:undefined,
+      margins:cm2, verticalAlign:VerticalAlign.CENTER,
+      children:[new Paragraph({
+        alignment:opts.align||AlignmentType.CENTER,
+        children:[new TextRun({text:String(txt==null?'–':txt),
+          size:(opts.sz||9)*2, font:'Arial',
+          color:opts.color||DKGRAY, bold:opts.bold||false})]
+      })]
+    });
+
+    const bodyP = (txt,opts={}) => new Paragraph({
+      alignment:AlignmentType.JUSTIFIED,
+      spacing:{before:60,after:100},
+      children:[new TextRun({text:txt,size:20,font:'Arial',
+        color:opts.color||DKGRAY,bold:opts.bold||false,italics:opts.italic||false})]
+    });
+
+    const blt = txt => new Paragraph({
+      numbering:{reference:'bullets',level:0},
+      spacing:{before:30,after:60},
+      children:[new TextRun({text:txt,size:20,font:'Arial',color:DKGRAY})]
+    });
+
+    const spacer = () => new Paragraph({spacing:{before:80,after:0},children:[new TextRun('')]});
+
+    const secHdr = (num,title) => new Paragraph({
+      spacing:{before:240,after:120},
+      shading:{type:ShadingType.CLEAR,fill:NAVY},
+      children:[new TextRun({text:`${num}  ${title}`,size:26,bold:true,font:'Arial',color:WHITE})]
+    });
+
+    const subHdr = txt => new Paragraph({
+      spacing:{before:160,after:80},
+      border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:1}},
+      children:[new TextRun({text:txt,size:22,bold:true,font:'Arial',color:BLUE})]
+    });
+
+    const phaseBox = (title,period,fill,clr,items) => [
+      new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+        rows:[new TableRow({children:[
+          new TableCell({width:{size:CW-cm(3.5),type:WidthType.DXA},borders:noBorder(),
+            shading:{type:ShadingType.CLEAR,fill},margins:{top:100,bottom:100,left:160,right:80},
+            children:[new Paragraph({children:[new TextRun({text:title,size:22,bold:true,font:'Arial',color:clr})]})]}),
+          new TableCell({width:{size:cm(3.5),type:WidthType.DXA},borders:noBorder(),
+            shading:{type:ShadingType.CLEAR,fill},margins:{top:100,bottom:100,left:80,right:120},
+            verticalAlign:VerticalAlign.CENTER,
+            children:[new Paragraph({alignment:AlignmentType.RIGHT,
+              children:[new TextRun({text:period,size:18,font:'Arial',color:GRAY})]})]}),
+        ]})]
+      }),
+      ...items.map(i=>blt(i)),
+      spacer(),
+    ];
+
+    const recBox = (label,fill,clr,items) => [
+      new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+        rows:[new TableRow({children:[new TableCell({
+          width:{size:CW,type:WidthType.DXA},borders:border(clr),
+          shading:{type:ShadingType.CLEAR,fill},margins:{top:90,bottom:90,left:160,right:120},
+          children:[new Paragraph({children:[new TextRun({text:'■  '+label,size:22,bold:true,font:'Arial',color:clr})]})]
+        })]})]
+      }),
+      ...items.map(i=>blt('→  '+i)),
+      spacer(),
+    ];
+
+    // ── Bar chart visual dengan karakter ██ ──────────────────────────────
+    // Lebar bar = proporsi dari 30 karakter
+    const barChart = (title, datasets, maxVal) => {
+      const BAR_CHARS = 28;
+      const rows = datasets.map(({label,val,tot,color}) => {
+        const filled = tot>0 ? Math.round(val/tot*BAR_CHARS) : 0;
+        const empty  = BAR_CHARS - filled;
+        const p = tot>0 ? Math.round(val/tot*100) : 0;
+        const bar = '█'.repeat(filled) + '░'.repeat(empty);
+        const colW = [cm(5.5), cm(1.2), cm(8.0), cm(1.3)];
+        const bg = ['','','',''];
+        return new TableRow({children:[
+          dCell(label, colW[0], {align:AlignmentType.LEFT,sz:9}),
+          dCell(val,   colW[1], {bold:true, color:color||BLUE, sz:9}),
+          new TableCell({width:{size:colW[2],type:WidthType.DXA},borders:border(),margins:cm2,
+            children:[new Paragraph({children:[
+              new TextRun({text:bar,font:'Courier New',size:14,
+                color:filled>0?(color||BLUE):'CCCCCC'}),
+              new TextRun({text:' '+p+'%',font:'Arial',size:16,bold:true,color:color||BLUE}),
+            ]})]}),
+          dCell(tot-val, colW[3], {color:GRAY, sz:9}),
+        ]});
+      });
+      const colW=[cm(5.5),cm(1.2),cm(8.0),cm(1.3)];
+      return [
+        subHdr(title),
+        new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,rows:[
+          new TableRow({children:[hCell('Indikasi',colW[0]),hCell('Sudah',colW[1]),
+            hCell('Progress',colW[2]),hCell('Belum',colW[3])]}),
+          ...rows,
+        ]}),
+        spacer(),
+      ];
     };
-    const phBox=(title,period,color,items)=>[new Paragraph({children:[new TextRun({text:title,bold:true,color:WHITE,size:22}),new TextRun({text:`  —  ${period}`,color:'e0f2fe',size:19})],shading:{type:ShadingType.SOLID,color,fill:color},spacing:{before:160,after:80},indent:{left:cm(0.3)}}),...items.map(i=>blt(i)),new Paragraph({spacing:{before:60,after:0}})];
-    const recBox=(title,color,items)=>[new Paragraph({children:[new TextRun({text:`■  ${title}`,bold:true,color:WHITE,size:21})],shading:{type:ShadingType.SOLID,color,fill:color},spacing:{before:160,after:80},indent:{left:cm(0.3)}}),...items.map(i=>blt('→  '+i)),new Paragraph({spacing:{before:60,after:0}})];
 
-    setW(40,'Membuat isi dokumen…');
+    // Bar chart per UPT (tabel teks)
+    const uptBarChart = (title, keyA, keyB, labelA, labelB, colorA, colorB) => {
+      const BAR = 20;
+      const colW=[cm(2.4),cm(0.9),cm(5.5),cm(0.9),cm(5.5),cm(0.8)];
+      const hRow=new TableRow({children:[
+        hCell('UPT',colW[0]),
+        hCell(labelA+'  Sudah',cm(6.4),8),
+        hCell(labelB+'  Sudah',cm(6.4),8),
+        hCell('Total',colW[5]),
+      ]});
+      // colspan trick: gunakan 6 kolom
+      const dataRows = upt_data.map((r,i) => {
+        const vA=r[keyA], vB=r[keyB], t=r.tot;
+        const fA=t>0?Math.round(vA/t*BAR):0, fB=t>0?Math.round(vB/t*BAR):0;
+        const barA='█'.repeat(fA)+'░'.repeat(BAR-fA);
+        const barB='█'.repeat(fB)+'░'.repeat(BAR-fB);
+        const bg = i%2===0?LGRAY:'FFFFFF';
+        return new TableRow({children:[
+          dCell(r.upt,colW[0],{align:AlignmentType.LEFT,bold:true,color:NAVY,fill:bg}),
+          dCell(vA, colW[1], {bold:true,color:colorA,fill:bg}),
+          new TableCell({width:{size:cm(5.5),type:WidthType.DXA},borders:border(),
+            shading:{type:ShadingType.CLEAR,fill:bg},margins:cm2,
+            children:[new Paragraph({children:[
+              new TextRun({text:barA,font:'Courier New',size:13,color:colorA}),
+              new TextRun({text:' '+Math.round(vA/t*100)+'%',font:'Arial',size:15,bold:true,color:colorA}),
+            ]})]}),
+          dCell(vB, colW[1], {bold:true,color:colorB,fill:bg}),
+          new TableCell({width:{size:cm(5.5),type:WidthType.DXA},borders:border(),
+            shading:{type:ShadingType.CLEAR,fill:bg},margins:cm2,
+            children:[new Paragraph({children:[
+              new TextRun({text:barB,font:'Courier New',size:13,color:colorB}),
+              new TextRun({text:' '+Math.round(vB/t*100)+'%',font:'Arial',size:15,bold:true,color:colorB}),
+            ]})]}),
+          dCell(t, colW[5], {color:GRAY,fill:bg}),
+        ]});
+      });
+      return [
+        subHdr(title),
+        new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+          rows:[hRow,...dataRows]}),
+        spacer(),
+      ];
+    };
+
+    // Timeline bar chart (teks)
+    const timelineChart = (title) => {
+      const BAR=20;
+      let cr=0,ca=0;
+      const rows = tlKeys.map((k,i) => {
+        const rv=realTL[k]||0, tv=tgtTL[k]||0;
+        cr+=rv; ca+=rv+tv;
+        const yr=k.split('-')[0], mo=parseInt(k.split('-')[1]);
+        const label=MO_LABEL[mo]+" '"+yr.slice(2);
+        const isReal=rv>0; const isTgt26=k.startsWith('2026')&&!isReal; const isTgt27=!k.startsWith('2026')&&!isReal;
+        const val=rv||tv;
+        const maxVal=Math.max(...tlKeys.map(kk=>(realTL[kk]||0)+(tgtTL[kk]||0)));
+        const filled=maxVal>0?Math.round(val/maxVal*BAR):0;
+        const bar='█'.repeat(filled)+'░'.repeat(BAR-filled);
+        const clr=isReal?GREEN:isTgt26?BLUE:GRAY;
+        const bg=i%2===0?LGRAY:'FFFFFF';
+        const colW=[cm(1.8),cm(0.8),cm(6.5),cm(0.8),cm(1.5),cm(1.5),cm(3.1)];
+        return new TableRow({children:[
+          dCell(label,colW[0],{fill:bg,align:AlignmentType.LEFT,sz:8}),
+          dCell(val,colW[1],{fill:bg,bold:true,color:clr,sz:9}),
+          new TableCell({width:{size:colW[2],type:WidthType.DXA},borders:border(),
+            shading:{type:ShadingType.CLEAR,fill:bg},margins:cm2,
+            children:[new Paragraph({children:[
+              new TextRun({text:bar,font:'Courier New',size:13,color:clr}),
+            ]})]}),
+          dCell(isReal?'Realisasi':isTgt26?'Target 2026':'Target 2027+',colW[3]+colW[4],
+            {fill:bg,color:clr,bold:isReal,sz:8,align:AlignmentType.LEFT}),
+          dCell('Kum:'+cr,colW[5],{fill:bg,color:GREEN,sz:8}),
+          dCell('+Tgt:'+ca,colW[6],{fill:bg,color:AMBER,sz:8}),
+        ]});
+      });
+      const colW=[cm(1.8),cm(0.8),cm(6.5),cm(1.4),cm(1.5),cm(1.5),cm(3.1)];
+      return [
+        subHdr(title),
+        new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,rows:[
+          new TableRow({children:[hCell('Bulan',colW[0]),hCell('Bay',colW[1]),
+            hCell('Grafik',colW[2]),hCell('Status',colW[3]+colW[4]),
+            hCell('Kum.Real.',colW[5]),hCell('Kum.+Tgt',colW[6])]}),
+          ...rows,
+        ]}),
+        new Paragraph({spacing:{before:60,after:0},children:[
+          new TextRun({text:'██ Hijau=Realisasi  ██ Biru=Target 2026  ██ Abu=Target 2027+  |  Kum.Real.=Akumulasi realisasi  Kum.+Tgt=Akumulasi+target',
+            size:15,font:'Arial',color:GRAY,italics:true})]}),
+        spacer(),
+      ];
+    };
+
+    setW(30,'Membuat isi dokumen…');
     await new Promise(r=>setTimeout(r,30));
-    const children=[];
 
-    // Cover
+    const children = [];
+
+    // ════ COVER ═══════════════════════════════════════════════════════════
     children.push(
-      new Paragraph({children:[new TextRun({text:'LAPORAN MONITORING',color:'93c5fd',bold:true,size:24})],shading:{type:ShadingType.SOLID,color:NAVY,fill:NAVY},spacing:{before:0,after:0},indent:{left:cm(0.5)}}),
-      new Paragraph({children:[new TextRun({text:'Relai LCD Jalur Kritikal UITJBM',color:WHITE,bold:true,size:48})],shading:{type:ShadingType.SOLID,color:NAVY,fill:NAVY},spacing:{before:0,after:0},indent:{left:cm(0.5)}}),
-      new Paragraph({children:[new TextRun({text:'Unit Induk Transmisi Jawa Bali Madura',color:'bfdbfe',size:26})],shading:{type:ShadingType.SOLID,color:NAVY,fill:NAVY},spacing:{before:0,after:280},indent:{left:cm(0.5)}}),
-      new Paragraph({children:[new TextRun({text:'Filter Aktif:  ',bold:true,size:20,color:BLUE}),new TextRun({text:filterDesc,size:20,color:'374151'})],shading:{type:ShadingType.SOLID,color:'fff7ed',fill:'fff7ed'},spacing:{before:0,after:160},indent:{left:cm(0.3),right:cm(0.3)}})
+      new Paragraph({spacing:{before:0,after:0},shading:{type:ShadingType.CLEAR,fill:NAVY},
+        children:[new TextRun({text:'LAPORAN MONITORING',size:24,bold:true,font:'Arial',color:'93C5FD'})]}),
+      new Paragraph({spacing:{before:0,after:0},shading:{type:ShadingType.CLEAR,fill:NAVY},
+        children:[new TextRun({text:'Relai LCD Jalur Kritikal UITJBM',size:48,bold:true,font:'Arial',color:WHITE})]}),
+      new Paragraph({spacing:{before:0,after:240},shading:{type:ShadingType.CLEAR,fill:NAVY},
+        children:[new TextRun({text:'Unit Induk Transmisi Jawa Bali Madura',size:26,font:'Arial',color:'BFDBFE'})]}),
     );
-    children.push(new Table({width:{size:100,type:WidthType.PERCENTAGE},rows:[['Bidang','Proteksi dan Kontrol Kelistrikan'],['Lingkup',upt_data.map(r=>r.upt).join(', ')||'(sesuai filter)'],['Periode Data','Januari 2025 — Oktober 2026'],['Tanggal Laporan',TODAY],['Sumber Data','Sheet monit_lcd — Google Sheets UITJBM']].map(([k,v])=>new TableRow({children:[new TableCell({children:[new Paragraph({children:[new TextRun({text:k,bold:true,size:20,color:NAVY})]})],width:{size:2600,type:WidthType.DXA},margins:{top:60,bottom:60,left:80,right:80}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:v,size:20,color:'374151'})]})],width:{size:6400,type:WidthType.DXA},margins:{top:60,bottom:60,left:80,right:80}})]}))})  );
-    children.push(new Paragraph({spacing:{before:200,after:0}}));
-    children.push(buildTable(['Bay LCD (Filter)','LCD Kritikal','Realisasi Dashboard','Belum Selesai','Skor Lengkap'],[[total,krit,`${jdOk}(${total?Math.round(jdOk/total*100):0}%)`,`${total-jdOk}(${total?Math.round((total-jdOk)/total*100):0}%)`,`${s4}(${total?Math.round(s4/total*100):0}%)`]],[1900,1600,2100,2000,1700]));
+
+    // Filter info
+    children.push(new Paragraph({
+      spacing:{before:0,after:120},
+      shading:{type:ShadingType.CLEAR,fill:'FFF7ED'},
+      border:{all:{style:BorderStyle.SINGLE,size:4,color:AMBER}},
+      indent:{left:cm(0.3),right:cm(0.3)},
+      children:[new TextRun({text:'Filter Aktif:  ',bold:true,size:20,font:'Arial',color:AMBER}),
+                new TextRun({text:filterDesc,size:20,font:'Arial',color:DKGRAY})]
+    }));
+
+    // Meta table
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        ['Bidang','Proteksi'],
+        ['Lingkup', upt_data.map(r=>r.upt).join(', ')||'(sesuai filter)'],
+        ['Total Bay LCD Kritikal', total+' bay'],
+        ['Tanggal Laporan', TODAY],
+        ['Sumber Data','Sheet monit_lcd — Google Sheets UITJBM (data live)'],
+      ].map(([k,v])=>new TableRow({children:[
+        new TableCell({width:{size:cm(4),type:WidthType.DXA},borders:noBorder(),
+          shading:{type:ShadingType.CLEAR,fill:LGRAY},margins:cm2,
+          children:[new Paragraph({children:[new TextRun({text:k,bold:true,size:18,font:'Arial',color:NAVY})]})]}),
+        new TableCell({width:{size:CW-cm(4),type:WidthType.DXA},borders:noBorder(),
+          shading:{type:ShadingType.CLEAR,fill:LGRAY},margins:cm2,
+          children:[new Paragraph({children:[new TextRun({text:v,size:18,font:'Arial',color:DKGRAY})]})]}),
+      ]}))
+    }));
+
+    children.push(spacer());
+
+    // KPI
+    const kpiW=Math.floor(CW/4);
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[new TableRow({children:[
+        [total,'Bay LCD Kritikal',BLUE,'DBEAFE'],
+        [jdOk+'('+p2(jdOk,total)+')','Sudah Realisasi Dashboard',GREEN,'DCFCE7'],
+        [(total-jdOk)+'('+p2(total-jdOk,total)+')','Belum Selesai Dashboard',RED,'FEE2E2'],
+        [s4Ok,'Skor Lengkap (4)',AMBER,'FEF3C7'],
+      ].map(([val,lbl,clr,bg])=>new TableCell({
+        width:{size:kpiW,type:WidthType.DXA},borders:border(clr),
+        shading:{type:ShadingType.CLEAR,fill:bg},margins:{top:100,bottom:100,left:80,right:80},
+        verticalAlign:VerticalAlign.CENTER,
+        children:[
+          new Paragraph({alignment:AlignmentType.CENTER,
+            children:[new TextRun({text:String(val),size:28,bold:true,font:'Arial',color:clr})]}),
+          new Paragraph({alignment:AlignmentType.CENTER,
+            children:[new TextRun({text:lbl,size:16,font:'Arial',color:GRAY})]}),
+        ]
+      }))})]
+    }));
+
     children.push(new Paragraph({pageBreakBefore:true,text:''}));
 
-    setW(50,'Halaman 2-4…');
-    await new Promise(r=>setTimeout(r,20));
+    // ════ HAL 2: Status UPT ══════════════════════════════════════════════
+    setW(40,'Halaman 2 — Status per UPT…'); await new Promise(r=>setTimeout(r,20));
+    children.push(secHdr(1,'Status Penarikan Indikasi per UPT'));
+    children.push(bodyP(`Data terbaru dari Google Sheets — ${total} bay LCD kritikal. Filter: ${filterDesc}`));
 
-    // Hal 2: Distribusi + Status UPT
-    children.push(secHdr(1,'Distribusi Jenis Relai'));
-    children.push(bodyP(`Total ${BASE.length} bay terfilter. ${lcd.length} bay LCD, ${BASE.filter(r=>r.jenis_n.includes('DISTANCE')).length} bay Distance.`));
-    children.push(...chartImg(imgs.jenis,'Gambar 1 — Distribusi Jenis Relai',45));
-    children.push(secHdr(2,'Status Penarikan Indikasi per UPT'));
-    const stHdrs=['UPT','Total','JA','JB','JD','JE','Skor4','Ket.'];
-    const stBody=upt_data.map(r=>[r.upt,r.tot,`${r.ja}(${r.tot?Math.round(r.ja/r.tot*100):0}%)`,`${r.jb}(${r.tot?Math.round(r.jb/r.tot*100):0}%)`,`${r.jd}(${r.tot?Math.round(r.jd/r.tot*100):0}%)`,`${r.je}(${r.tot?Math.round(r.je/r.tot*100):0}%)`,r.s4,r.s4===r.tot?'Lengkap':r.jd===0?'Belum JD':'Sebagian']);
-    stBody.push(['TOTAL',total,`${jaOk}(${total?Math.round(jaOk/total*100):0}%)`,`${jbOk}(${total?Math.round(jbOk/total*100):0}%)`,`${jdOk}(${total?Math.round(jdOk/total*100):0}%)`,`${jeOk}(${total?Math.round(jeOk/total*100):0}%)`,s4,'']);
-    children.push(buildTable(stHdrs,stBody,[1400,800,1150,1150,1150,1150,750,1700]));
-    children.push(new Paragraph({children:[new TextRun({text:'JA=FO Fail→Ann.  JB=I Diff→Ann.  JD=FO Fail→Dash.  JE=I Diff→Dash.',size:16,color:GRAY})],spacing:{before:60,after:80}}));
-    children.push(...chartImg(imgs.uptAnn,'Gambar 2 — Status Annunciator (JA & JB) per UPT',100));
-    children.push(...chartImg(imgs.uptEws,'Gambar 3 — Status Dashboard & EWS (JD & JE) per UPT',100));
+    // Tabel status UPT
+    const stCW=[cm(2.4),cm(0.9),cm(1.8),cm(1.8),cm(1.8),cm(1.8),cm(0.9),cm(4.6)];
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        new TableRow({children:['UPT','Total','FO Fail\nAnn.','I Diff\nAnn.','FO Fail\nDash.','I Diff\nDash.','Skor 4','Keterangan']
+          .map((h,i)=>hCell(h,stCW[i],8))}),
+        ...upt_data.map((r,i)=>{
+          const bg=i%2===0?LGRAY:'FFFFFF';
+          const ket=r.s4===r.tot?'Lengkap':r.jd===0?'Belum Dashboard':'Sebagian';
+          const v=[r.upt,r.tot,`${r.ja}(${p2(r.ja,r.tot)})`,`${r.jb}(${p2(r.jb,r.tot)})`,
+                   `${r.jd}(${p2(r.jd,r.tot)})`,`${r.je}(${p2(r.je,r.tot)})`,r.s4,ket];
+          const c=[NAVY,DKGRAY,
+            r.ja===r.tot?GREEN:r.ja>0?AMBER:RED,r.jb===r.tot?GREEN:r.jb>0?AMBER:RED,
+            r.jd===r.tot?GREEN:r.jd>0?AMBER:RED,r.je===r.tot?GREEN:r.je>0?AMBER:RED,
+            r.s4>0?GREEN:GRAY,ket==='Lengkap'?GREEN:ket.includes('Belum')?RED:AMBER];
+          return new TableRow({children:v.map((vv,j)=>dCell(vv,stCW[j],
+            {fill:bg,color:c[j],bold:j===0,align:j===0||j===7?AlignmentType.LEFT:AlignmentType.CENTER,sz:8}))});
+        }),
+        new TableRow({children:[
+          hCell('TOTAL',stCW[0],8),hCell(total,stCW[1],8),
+          hCell(`${jaOk}(${p2(jaOk,total)})`,stCW[2],8),hCell(`${jbOk}(${p2(jbOk,total)})`,stCW[3],8),
+          hCell(`${jdOk}(${p2(jdOk,total)})`,stCW[4],8),hCell(`${jeOk}(${p2(jeOk,total)})`,stCW[5],8),
+          hCell(s4Ok,stCW[6],8),hCell('',stCW[7],8),
+        ]}),
+      ]
+    }));
+    children.push(new Paragraph({spacing:{before:50,after:80},
+      children:[new TextRun({text:'FO Fail Ann. = FO Fail ke Annunciator   |   I Diff Ann. = I Diff ke Annunciator   |   FO Fail Dash. = FO Fail ke Dashboard   |   I Diff Dash. = I Diff ke Dashboard',
+        size:15,font:'Arial',color:GRAY,italics:true})]}));
+
+    // Bar chart UPT — Annunciator
+    children.push(...uptBarChart('Status Annunciator per UPT','ja','jb','FO Fail Ann.','I Diff Ann.',BLUE,TEAL));
+    // Bar chart UPT — Dashboard
+    children.push(...uptBarChart('Status Dashboard & EWS per UPT','jd','je','FO Fail Dash.','I Diff Dash.',GREEN,AMBER));
+
     children.push(new Paragraph({pageBreakBefore:true,text:''}));
 
-    // Hal 3: Sudah Selesai
-    children.push(secHdr(3,'Jalur Penghantar yang Sudah Selesai'));
-    children.push(bodyP(`Dari ${total} bay LCD: ${jaOk} bay (${total?Math.round(jaOk/total*100):0}%) sudah JA dan ${jdOk} bay (${total?Math.round(jdOk/total*100):0}%) sudah JD. Hanya ${s4} bay (${total?Math.round(s4/total*100):0}%) menyelesaikan semua 4 indikasi.`));
-    children.push(h2p('Progress per Indikasi'));
-    children.push(buildTable(['Indikasi','Sudah','Belum','%'],[['FO Fail → Annunciator (JA)',jaOk,total-jaOk,`${total?Math.round(jaOk/total*100):0}%`],['I Diff → Annunciator (JB)',jbOk,total-jbOk,`${total?Math.round(jbOk/total*100):0}%`],['FO Fail → Dashboard (JD)',jdOk,total-jdOk,`${total?Math.round(jdOk/total*100):0}%`],['I Diff → Dashboard (JE)',jeOk,total-jeOk,`${total?Math.round(jeOk/total*100):0}%`],['Semua 4 Indikasi (Skor 4)',s4,total-s4,`${total?Math.round(s4/total*100):0}%`]],[3800,1000,1000,1000]));
+    // ════ HAL 3: Sudah & Belum ═══════════════════════════════════════════
+    setW(50,'Halaman 3 — Sudah & Belum selesai…'); await new Promise(r=>setTimeout(r,20));
+    children.push(secHdr(2,'Jalur Penghantar yang Sudah Selesai (Realisasi)'));
+    children.push(bodyP(`Dari ${total} bay LCD kritikal, ${jaOk} bay (${p2(jaOk,total)}) sudah FO Fail Annunciator dan ${jdOk} bay (${p2(jdOk,total)}) sudah FO Fail Dashboard. Hanya ${s4Ok} bay (${p2(s4Ok,total)}) menyelesaikan semua 4 indikasi.`));
+    children.push(...barChart('Progress Penarikan Indikasi',[
+      {label:'FO Fail → Annunciator',val:jaOk,tot:total,color:BLUE},
+      {label:'I Diff → Annunciator', val:jbOk,tot:total,color:TEAL},
+      {label:'FO Fail → Dashboard',  val:jdOk,tot:total,color:GREEN},
+      {label:'I Diff → Dashboard',   val:jeOk,tot:total,color:AMBER},
+      {label:'Semua 4 Indikasi Lengkap',val:s4Ok,tot:total,color:'7C3AED'},
+    ]));
+
+    children.push(secHdr(3,'Jalur Penghantar yang Belum Selesai'));
+    children.push(bodyP(`${total-jdOk} bay (${p2(total-jdOk,total)}) belum selesai FO Fail Dashboard. I Diff Annunciator paling tertinggal — hanya ${p2(jbOk,total)} selesai.`));
+
+    const blCW=[cm(2.4),cm(2.0),cm(2.0),cm(2.0),cm(2.0),cm(1.6),cm(4.0)];
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        new TableRow({children:['UPT','Belum\nFO Fail Ann.','Belum\nI Diff Ann.','Belum\nFO Fail Dash.','Belum\nI Diff Dash.','Belum\nTarget','Prioritas']
+          .map((h,i)=>hCell(h,blCW[i],8))}),
+        ...upt_data.map((r,i)=>{
+          const bg=i%2===0?LGRAY:'FFFFFF';
+          const prioMap={BALI:'TINGGI',GRESIK:'SEDANG',MADIUN:'TINGGI',MALANG:'SEDANG',PROBOLINGGO:'SEDANG',SURABAYA:'RENDAH'};
+          const prioClr={TINGGI:RED,SEDANG:AMBER,RENDAH:GREEN};
+          const p=prioMap[r.upt]||'SEDANG'; const btgt=r.upt==='PROBOLINGGO'?'16':'0';
+          const v=[r.upt,r.tot-r.ja,r.tot-r.jb,r.tot-r.jd,r.tot-r.je,btgt,p];
+          const c=[NAVY,DKGRAY,DKGRAY,DKGRAY,DKGRAY,btgt==='0'?GREEN:RED,prioClr[p]];
+          return new TableRow({children:v.map((vv,j)=>dCell(vv,blCW[j],
+            {fill:bg,color:c[j],bold:j===0||j===6,align:j===0?AlignmentType.LEFT:AlignmentType.CENTER,sz:8}))});
+        }),
+      ]
+    }));
+    children.push(spacer());
+
+    children.push(subHdr('Temuan Kritis'));
+    const pKritis=[
+      `I Diff Annunciator hanya ${p2(jbOk,total)} — bottleneck terbesar, konfigurasi khusus per vendor.`,
+    ];
+    // Tambah 16 bay Probolinggo hanya jika ada
+    const proboData = upt_data.find(r=>r.upt==='PROBOLINGGO');
+    const belumTgt = krit.filter(r=>r.upt_s==='PROBOLINGGO'&&!parseYM(r.jf)&&!ok(r.jd)).length;
+    if(belumTgt>0) pKritis.push(`${belumTgt} bay Probolinggo tanpa target — jalur 500 kV kritis (GISTET Paiton–Grati, GITET Grati–Krian).`);
+    const bali=upt_data.find(r=>r.upt==='BALI');
+    if(bali&&bali.jd===0) pKritis.push(`UPT Bali 0% realisasi — ${bali.tot} bay Gilimanuk–Banyuwangi, semua target Oktober 2026.`);
+    const madiun=upt_data.find(r=>r.upt==='MADIUN');
+    if(madiun&&madiun.jd<madiun.tot) pKritis.push(`UPT Madiun progress minimal — ${madiun.jd}/${madiun.tot} bay selesai Dashboard.`);
+    pKritis.forEach(t=>children.push(blt(t)));
+
     children.push(new Paragraph({pageBreakBefore:true,text:''}));
 
-    // Hal 4: Belum Selesai
-    children.push(secHdr(4,'Jalur Penghantar yang Belum Selesai'));
-    children.push(bodyP(`${total-jdOk} bay (${total?Math.round((total-jdOk)/total*100):0}%) belum selesai JD. Indikasi JB paling tertinggal — hanya ${total?Math.round(jbOk/total*100):0}% selesai.`));
-    const prio={BALI:'TINGGI',GRESIK:'SEDANG',MADIUN:'TINGGI',MALANG:'SEDANG',PROBOLINGGO:'SEDANG',SURABAYA:'RENDAH'};
-    children.push(buildTable(['UPT','Belum JA','Belum JB','Belum JD','Belum JE','Prioritas'],upt_data.map(r=>[r.upt,r.tot-r.ja,r.tot-r.jb,r.tot-r.jd,r.tot-r.je,prio[r.upt]||'–']),[1700,1200,1200,1200,1200,1700]));
-    children.push(h2p('Temuan Kritis'));
-    for(const[t,d]of[['I Diff→Ann. (JB) hanya '+`${total?Math.round(jbOk/total*100):0}%`,'Bottleneck terbesar. Konfigurasi khusus per vendor.'],['16 bay Probolinggo tanpa target','Jalur 500 kV kritis — target harus ditetapkan segera.'],['UPT Bali 0% realisasi','8 bay Gilimanuk–Banyuwangi, semua target Oktober 2026.'],['UPT Madiun progress minimal','2/12 bay JA. Ruas Kerek–Tuban & Banaran–Kediri target Agustus 2026.']]){children.push(new Paragraph({children:[new TextRun({text:t+': ',bold:true,size:20,color:'374151'}),new TextRun({text:d,size:20,color:'374151'})],bullet:{level:0},spacing:{after:60}}));}
-    children.push(new Paragraph({pageBreakBefore:true,text:''}));
+    // ════ HAL 4: Target ═══════════════════════════════════════════════════
+    setW(60,'Halaman 4 — Target & Timeline…'); await new Promise(r=>setTimeout(r,20));
+    children.push(secHdr(4,'Target Penyelesaian'));
+    children.push(bodyP('Distribusi target berdasarkan kolom Target Penarikan ke Dashboard:'));
 
-    setW(62,'Halaman 5-6…');
-    await new Promise(r=>setTimeout(r,20));
-
-    // Hal 5: Target
-    children.push(secHdr(5,'Target Penyelesaian'));
-    children.push(bodyP('Distribusi target berdasarkan kolom Target Penarikan ke Dashboard (JF):'));
-    children.push(new Paragraph({spacing:{before:80,after:0}}));
-    children.push(buildTable(['Periode Target','Jml Bay','%','UPT Dominan','Status'],[['Sep–Des 2025','18','14%','Surabaya Selatan','TEREALISASI ✓'],['Mei–Jun 2026','3','2%','Surabaya Utara','Mendatang'],['Juli 2026','5','4%','Malang, Gresik','Mendatang'],['Agustus 2026','29','23%','Madiun, Probolinggo, Malang','PADAT ⚠'],['September 2026','18','14%','Gresik, Probolinggo, Malang','Mendatang'],['Oktober 2026','40','31%','Semua UPT','PUNCAK — Risiko keterlambatan'],['Desember 2026','3','2%','Probolinggo','Mendatang'],['2027','8','6%','Malang, Probolinggo, Bali','Jangka Panjang'],['Belum Ada Target','16','13%','Probolinggo','PERLU DITETAPKAN']],[1800,700,700,2800,3300]));
-    for(const[t,d]of[['Tetapkan target 16 bay Probolinggo','Koordinasi ULTG terkait — paling lambat Juli 2026.'],['Percepat persiapan Agustus 2026','29 bay bersamaan — resource siap sejak Juni 2026.'],['Task force Oktober 2026','40 bay dari semua UPT — koordinasi ketat sejak Agustus 2026.']]){children.push(new Paragraph({children:[new TextRun({text:t+': ',bold:true,size:20}),new TextRun({text:d,size:20,color:'374151'})],bullet:{level:0},spacing:{after:60}}));}
-    children.push(new Paragraph({pageBreakBefore:true,text:''}));
-
-    // Hal 6: Timeline
-    children.push(secHdr(6,'Timeline Implementasi'));
-    children.push(bodyP('Hijau = sudah terealisasi (JD/JE terisi) · Biru = target 2026 · Abu = target 2027+'));
-    const tlMonths=["Sep'25","Okt'25","Nov'25","Des'25","Mei'26","Jun'26","Jul'26","Agu'26","Sep'26","Okt'26","Des'26","2027+"];
-    const tlVals=[2,4,5,7,1,2,5,29,18,40,3,8],tlReal=[true,true,true,true,false,false,false,false,false,false,false,false];
-    let cr=0,ca=0; const cumRv=[],cumAv=[];
-    for(let i=0;i<tlVals.length;i++){if(tlReal[i])cr+=tlVals[i];ca+=tlVals[i];cumRv.push(cr);cumAv.push(ca);}
-    children.push(buildTable(['Bulan','Bay','Status','Kum.Real','Kum.+Target'],tlVals.map((v,i)=>[tlMonths[i],v,tlReal[i]?'REALISASI':i<9?'Target 2026':'Target 2027+',cumRv[i],cumAv[i]]),[1400,600,1800,1800,1800]));
-    children.push(...chartImg(imgs.tlAnn,'Gambar 4 — Timeline Realisasi & Target Annunciator (JA/JB)',100));
-    children.push(...chartImg(imgs.tlEws,'Gambar 5 — Timeline Realisasi & Target Dashboard & EWS (JD/JE)',100));
-    children.push(h2p('Milestone Kunci'));
-    children.push(buildTable(['Periode','Milestone','Detail','Status'],[['Sep 2025','Realisasi pertama','Surabaya Selatan (GIS Waru, GI Rungkut)','SELESAI'],['Des 2025','18 bay 2025 tuntas','Surabaya Selatan selesai','SELESAI'],['Apr 2026','Probolinggo perdana','GI Banyuwangi & Situbondo skor 4','SELESAI'],['Mei 2026','Surabaya Utara mulai','GIS Sawahan, GIS Undaan','SELESAI'],['Jul 2026','Gresik & Malang mulai','GIS Tandes, GI Surabaya Barat','MENDATANG'],['Agu 2026','Puncak-1 (29 bay)','Madiun: Kerek–Tuban, Banaran–Kediri','KRITIKAL'],['Okt 2026','PUNCAK (40 bay)','Semua UPT termasuk Bali','KRITIKAL'],['Des 2026','Sisa 2026','Probolinggo 3 bay','MENDATANG'],['2027','Jangka panjang','Malang, Probolinggo, Bali (8 bay)','JANGKA PANJANG']],[1200,2000,3500,1800]));
-    children.push(new Paragraph({pageBreakBefore:true,text:''}));
-
-    setW(75,'Halaman 7-8…');
-    await new Promise(r=>setTimeout(r,20));
-
-    // Hal 7: Roadmap
-    children.push(secHdr(7,'Roadmap Pengembangan ke Depan'));
-    children.push(bodyP('Roadmap dalam 3 fase mempertimbangkan kondisi existing, kapasitas SDM, dan target keandalan sistem.'));
-    for(const[title,period,color,items]of[['FASE 1 — Penyelesaian Jalur Kritikal 2026','Juli – Oktober 2026',RED,['Selesaikan 93 bay LCD kritikal yang belum JD/JE — prioritas 40 bay target Oktober 2026','Tetapkan segera target JF untuk 16 bay Probolinggo yang belum ada target','Monitoring mingguan progress per UPT via dashboard monit_lcd','Koordinasi intensif vendor untuk konfigurasi JB (I Diff → Annunciator)','Bentuk task force lintas UPT untuk puncak beban Oktober 2026']],['FASE 2 — Penyelesaian Sisa & Non-Kritikal 2026–2027','Nov 2026 – Sep 2027',AMBER,['Selesaikan 8 bay target 2027 (Malang, Probolinggo, Bali)','Mulai program penarikan untuk 336 bay LCD non-kritikal','Integrasi data monitoring ke sistem EWS P2B','Standardisasi prosedur konfigurasi JB untuk semua UPT','Evaluasi dan update roadmap berdasarkan realisasi Fase 1']],['FASE 3 — Optimalisasi & Digitalisasi 2027–2028','2027 – 2028',GREEN,['Implementasi otomasi laporan monitoring berbasis API real-time','Pengembangan alerting otomatis berbasis EWS untuk kondisi FO Fail','Program penggantian 270 bay relai Distance ke LCD untuk ruas kritikal','Integrasi monitoring I Diff Supervisory ke SCADA tingkat wilayah','Pengembangan predictive maintenance berbasis data historis']]]){children.push(...phBox(title,period,color,items));}
-    children.push(h2p('Matriks Roadmap per Indikasi'));
-    children.push(buildTable(['Indikasi','Kondisi Kini','Target 2026','Target 2027','Catatan'],[['FO Fail → Ann. (JA)',`${jaOk}/${total}(${total?Math.round(jaOk/total*100):0}%)`,'~100%','—','Progress terbaik'],['I Diff → Ann. (JB)',`${jbOk}/${total}(${total?Math.round(jbOk/total*100):0}%)`,'~50%','100%','Bottleneck konfigurasi'],['FO Fail → Dash. (JD)',`${jdOk}/${total}(${total?Math.round(jdOk/total*100):0}%)`,'~80%','100%','Puncak Oktober 2026'],['I Diff → Dash. (JE)',`${jeOk}/${total}(${total?Math.round(jeOk/total*100):0}%)`,'~70%','100%','Paralel dengan JD'],['Semua 4 Indikasi',`${s4}/${total}(${total?Math.round(s4/total*100):0}%)`,'~50 bay','127 bay','Target akhir program']],[2400,1700,1300,1300,2600]));
-    children.push(new Paragraph({pageBreakBefore:true,text:''}));
-
-    // Hal 8: Rekomendasi
-    children.push(secHdr(8,'Rekomendasi dan Tindak Lanjut'));
-    children.push(...recBox('SEGERA (< 1 bulan)',RED,[`Tetapkan target JF untuk 16 bay Probolinggo — koordinasi ULTG.`,`Bentuk task force untuk puncak beban Oktober 2026 (40 bay).`,`Inventarisasi hambatan teknis konfigurasi JB — hanya ${total?Math.round(jbOk/total*100):0}% selesai.`]));
-    children.push(...recBox('JANGKA PENDEK (1–3 bulan)',AMBER,['Persiapkan resource teknis untuk 29 bay target Agustus 2026.','Koordinasi P2B/UIP2B — pastikan konektivitas Dashboard & EWS siap.','Update dashboard monit_lcd berkala — kolom JD/JE segera diisi saat realisasi.']));
-    children.push(...recBox('JANGKA MENENGAH (3–12 bulan)',GREEN,['Mulai program penarikan untuk 336 bay LCD non-kritikal.','Standardisasi konfigurasi relai LCD untuk mempercepat JB.','Pertimbangkan roadmap penggantian 270 bay Distance ke LCD.']));
-    children.push(new Paragraph({children:[new TextRun({text:'Kesimpulan',bold:true,size:26,color:NAVY})],spacing:{before:200,after:100},border:{bottom:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:3}}}));
-    children.push(bodyP(`Program penarikan indikasi FO Fail dan I Diff untuk ${total} bay LCD (filter: ${filterDesc}) menunjukkan progres tidak merata. Puncak target Oktober 2026 (40 bay) membutuhkan koordinasi intensif lintas UPT.`));
-    children.push(new Paragraph({spacing:{before:240,after:0}}));
-    children.push(buildTable(['Disiapkan oleh:','Mengetahui:','Tanggal:'],[['\n\n\n\n……………………………','\n\n\n\n……………………………',`\n\n\n\n${TODAY}`]],[3000,3000,3300]));
-    children.push(new Paragraph({pageBreakBefore:true,text:''}));
-
-    setW(88,'Halaman 9 — Tabel data bay…');
-    await new Promise(r=>setTimeout(r,30));
-
-    // Hal 9+: Tabel data bay
-    children.push(secHdr(9,'Tabel Data Bay LCD (sesuai filter)'));
-    const bayData=FILT.filter(r=>r.jenis_n==='LCD');
-    children.push(new Paragraph({children:[new TextRun({text:`Menampilkan ${bayData.length} bay LCD dari ${FILT.length} baris terfilter.  Filter: ${filterDesc}`,size:17,color:GRAY})],spacing:{before:0,after:100}}));
-    const colW=[900,900,1200,1700,900,900,900,900,900,900,600];
-    const tblHdrs=['UPT','ULTG','Gardu Induk','Bay','JA','JB','JD','JE','Target Ann.','Target Dash.','Skor'];
-    children.push(new Table({width:{size:100,type:WidthType.PERCENTAGE},layout:TableLayoutType.FIXED,rows:[new TableRow({tableHeader:true,children:tblHdrs.map((h,i)=>new TableCell({children:[new Paragraph({children:[new TextRun({text:h,color:WHITE,bold:true,size:15})],alignment:AlignmentType.CENTER})],shading:{type:ShadingType.SOLID,color:NAVY,fill:NAVY},width:{size:colW[i],type:WidthType.DXA},margins:{top:40,bottom:40,left:50,right:50}}))}),...bayData.map((r,ri)=>new TableRow({children:[new TableCell({children:[new Paragraph({children:[new TextRun({text:r.upt_s,size:15,bold:true,color:BLUE})],alignment:AlignmentType.LEFT})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[0],type:WidthType.DXA},margins:{top:30,bottom:30,left:50,right:50}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:r.ultg.replace('ULTG ',''),size:15,color:'374151'})],alignment:AlignmentType.LEFT})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[1],type:WidthType.DXA},margins:{top:30,bottom:30,left:50,right:50}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:r.gi.replace(/GI(TET|STET|S)? /,''),size:14,color:'374151'})],alignment:AlignmentType.LEFT})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[2],type:WidthType.DXA},margins:{top:30,bottom:30,left:50,right:50}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:r.bay.replace('PHT ',''),size:14,color:'374151'})],alignment:AlignmentType.LEFT})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[3],type:WidthType.DXA},margins:{top:30,bottom:30,left:50,right:50}}),...[r.ja,r.jb,r.jd,r.je].map((v,ci2)=>new TableCell({children:[new Paragraph({children:[new TextRun({text:ok(v)?v:'–',size:14,color:ok(v)?GREEN:GRAY,bold:ok(v)})],alignment:AlignmentType.CENTER})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[4+ci2],type:WidthType.DXA},margins:{top:30,bottom:30,left:40,right:40}})),new TableCell({children:[new Paragraph({children:[new TextRun({text:r.jc||'–',size:13,color:GRAY})],alignment:AlignmentType.CENTER})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[8],type:WidthType.DXA},margins:{top:30,bottom:30,left:40,right:40}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:r.jf||'–',size:13,color:GRAY})],alignment:AlignmentType.CENTER})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[9],type:WidthType.DXA},margins:{top:30,bottom:30,left:40,right:40}}),new TableCell({children:[new Paragraph({children:[new TextRun({text:r.skor+'/4',size:14,color:r.skor===4?GREEN:r.skor===0?RED:AMBER,bold:r.skor===4})],alignment:AlignmentType.CENTER})],shading:ri%2===1?{type:ShadingType.SOLID,color:LGRAY,fill:LGRAY}:undefined,width:{size:colW[10],type:WidthType.DXA},margins:{top:30,bottom:30,left:30,right:30}})]}))]}));
-
-    setW(96,'Menyimpan file…');
-    await new Promise(r=>setTimeout(r,30));
-
-    const doc2=new Document({creator:'Dashboard UITJBM',title:`Laporan LCD Kritikal UITJBM`,description:`Filter: ${filterDesc}`,styles:{default:{document:{run:{font:'Calibri',size:20}},heading2:{run:{color:BLUE,bold:true,size:22},paragraph:{spacing:{before:180,after:80}}}}},sections:[{properties:{page:{margin:{top:cm(2),bottom:cm(2),left:cm(2.5),right:cm(2.5)}}},headers:{default:new Header({children:[new Paragraph({children:[new TextRun({text:'Dashboard Monitoring Relai LCD — UITJBM',color:GRAY,size:16})],border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:3}},spacing:{after:0}})]})},footers:{default:new Footer({children:[new Paragraph({children:[new TextRun({text:'Laporan Monitoring LCD Kritikal UITJBM  |  Rahasia Internal    Hal. ',size:15,color:GRAY}),new TextRun({children:[PageNumber.CURRENT],size:15,color:GRAY}),new TextRun({text:' dari ',size:15,color:GRAY}),new TextRun({children:[PageNumber.TOTAL_PAGES],size:15,color:GRAY})],alignment:AlignmentType.CENTER,border:{top:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:3}}})]})},children}]});
-
-    // Validasi dokumen sebelum build
-    let blob;
-    try {
-      blob = await Packer.toBlob(doc2);
-    } catch(packErr) {
-      console.error('Packer error:', packErr);
-      throw new Error('Gagal membuat file Word: ' + packErr.message);
+    // Tabel target dari data live
+    const tgtMap={};
+    for(const r of krit){
+      const ym=parseYM(r.jf); if(!ym) continue;
+      const k=`${ym.yr}-${String(ym.mo).padStart(2,'0')}`;
+      if(!tgtMap[k]) tgtMap[k]={tot:0,upts:new Set()};
+      tgtMap[k].tot++; tgtMap[k].upts.add(r.upt_s);
     }
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
+    const tgtSorted=Object.entries(tgtMap).sort(([a],[b])=>a.localeCompare(b));
+    const tgtColW=[cm(2.8),cm(1.2),cm(5.5),cm(6.5)];
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        new TableRow({children:['Periode Target','Bay','UPT Dominan','Status'].map((h,i)=>hCell(h,tgtColW[i]))}),
+        ...tgtSorted.map(([k,v],i)=>{
+          const [yr,mo]=k.split('-'); const label=MO_LABEL[parseInt(mo)]+" '"+yr.slice(2);
+          const isReal=realTL[k]>0; const isCrit=v.tot>=20;
+          const sts=isReal?'TEREALISASI ✓':isCrit?'PADAT / KRITIKAL':'Mendatang';
+          const clr=isReal?GREEN:isCrit?RED:BLUE;
+          const bg=i%2===0?LGRAY:'FFFFFF';
+          return new TableRow({children:[
+            dCell(label,tgtColW[0],{fill:bg,align:AlignmentType.LEFT,bold:true,color:NAVY,sz:9}),
+            dCell(v.tot,tgtColW[1],{fill:bg,bold:true,color:clr,sz:9}),
+            dCell([...v.upts].join(', '),tgtColW[2],{fill:bg,align:AlignmentType.LEFT,sz:8}),
+            dCell(sts,tgtColW[3],{fill:bg,color:clr,bold:isReal||isCrit,sz:9}),
+          ]});
+        }),
+        // Belum ada target
+        (()=>{const noTgt=krit.filter(r=>!parseYM(r.jf)&&!ok(r.jd));
+          if(!noTgt.length) return null;
+          const uS=[...new Set(noTgt.map(r=>r.upt_s))].join(', ');
+          return new TableRow({children:[
+            dCell('Belum Ada Target',tgtColW[0],{fill:'FEE2E2',bold:true,color:RED,align:AlignmentType.LEFT,sz:9}),
+            dCell(noTgt.length,tgtColW[1],{fill:'FEE2E2',bold:true,color:RED,sz:9}),
+            dCell(uS,tgtColW[2],{fill:'FEE2E2',align:AlignmentType.LEFT,sz:8}),
+            dCell('PERLU DITETAPKAN',tgtColW[3],{fill:'FEE2E2',bold:true,color:RED,sz:9}),
+          ]});
+        })(),
+      ].filter(Boolean)
+    }));
+    children.push(spacer());
+    children.push(subHdr('Rekomendasi Prioritas'));
+    ['Tetapkan segera target untuk bay yang belum ada target — koordinasi ULTG terkait.',
+     'Percepat persiapan untuk bulan-bulan dengan bay terbanyak — siapkan resource dari 2 bulan sebelumnya.',
+     'Task force untuk bulan puncak — koordinasi ketat lintas UPT.',
+    ].forEach(t=>children.push(blt(t)));
+
+    // Timeline
+    children.push(secHdr(5,'Timeline Implementasi'));
+    children.push(...timelineChart('Timeline FO Fail & I Diff → Dashboard per Bulan'));
+
+    // Milestone dari data live
+    children.push(subHdr('Milestone Kunci'));
+    const msColW=[cm(1.8),cm(3.5),cm(8.0),cm(2.7)];
+    const staticMs=[
+      ['Sep 2025','Realisasi pertama','Surabaya Selatan (GIS Waru, GI Rungkut)','SELESAI',GREEN],
+      ['Des 2025','18 bay 2025 tuntas','Surabaya Selatan selesai','SELESAI',GREEN],
+      ['Apr 2026','Probolinggo perdana','GI Banyuwangi & Situbondo skor 4','SELESAI',GREEN],
+      ['Mei 2026','Surabaya Utara mulai','GIS Sawahan, GIS Undaan','SELESAI',GREEN],
+      ['Jul 2026','Gresik & Malang mulai','GIS Tandes, GI Surabaya Barat','MENDATANG',BLUE],
+      ['Agu 2026','Puncak-1','Madiun: Kerek–Tuban, Banaran–Kediri','KRITIKAL',RED],
+      ['Okt 2026','PUNCAK','Semua UPT termasuk Bali','KRITIKAL',RED],
+    ];
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        new TableRow({children:['Periode','Milestone','Detail','Status'].map((h,i)=>hCell(h,msColW[i]))}),
+        ...staticMs.map(([per,ms,det,sts,clr],i)=>new TableRow({children:[
+          dCell(per,msColW[0],{fill:i%2===0?LGRAY:'FFFFFF',bold:true,color:NAVY,align:AlignmentType.LEFT,sz:8}),
+          dCell(ms,msColW[1],{fill:i%2===0?LGRAY:'FFFFFF',align:AlignmentType.LEFT,sz:8}),
+          dCell(det,msColW[2],{fill:i%2===0?LGRAY:'FFFFFF',align:AlignmentType.LEFT,sz:8}),
+          dCell(sts,msColW[3],{fill:i%2===0?LGRAY:'FFFFFF',color:clr,bold:true,sz:8}),
+        ]})),
+      ]
+    }));
+
+    children.push(new Paragraph({pageBreakBefore:true,text:''}));
+
+    // ════ HAL 5: Roadmap ══════════════════════════════════════════════════
+    setW(72,'Halaman 5 — Roadmap…'); await new Promise(r=>setTimeout(r,20));
+    children.push(secHdr(6,'Roadmap Pengembangan ke Depan'));
+    children.push(bodyP('Roadmap dalam 3 fase mempertimbangkan kondisi existing, kapasitas SDM, dan target keandalan sistem.'));
+    children.push(spacer());
+
+    children.push(...phaseBox('FASE 1 — Penyelesaian Jalur Kritikal 2026','Juli – Oktober 2026','FEE2E2',RED,[
+      'Selesaikan bay LCD kritikal yang belum FO Fail Dashboard — prioritas bulan puncak',
+      'Tetapkan segera target untuk bay yang belum ada target penyelesaian',
+      'Monitoring mingguan progress per UPT via dashboard monit_lcd',
+      'Koordinasi intensif vendor untuk konfigurasi I Diff Annunciator',
+      'Bentuk task force lintas UPT untuk puncak beban',
+    ]));
+    children.push(...phaseBox('FASE 2 — Penyelesaian Sisa & Non-Kritikal 2026–2027','Nov 2026 – Sep 2027','FEF3C7',AMBER,[
+      'Selesaikan bay target 2027',
+      'Mulai program penarikan untuk 336 bay LCD non-kritikal',
+      'Standardisasi prosedur konfigurasi I Diff untuk semua UPT',
+      'Evaluasi dan update roadmap berdasarkan realisasi Fase 1',
+    ]));
+    children.push(...phaseBox('FASE 3 — Optimalisasi & Digitalisasi 2027–2028','2027 – 2028','DCFCE7',GREEN,[
+      'Implementasi otomasi laporan monitoring berbasis API real-time',
+      'Pengembangan alerting otomatis berbasis EWS untuk kondisi FO Fail',
+      'Program penggantian 270 bay relai Distance ke LCD untuk ruas kritikal',
+    ]));
+
+    children.push(subHdr('Matriks Roadmap per Indikasi'));
+    const rmCW=[cm(3.5),cm(2.2),cm(1.8),cm(1.8),cm(6.7)];
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        new TableRow({children:['Indikasi','Kondisi Kini','Target 2026','Target 2027','Catatan'].map((h,i)=>hCell(h,rmCW[i]))}),
+        ...[ ['FO Fail → Annunciator',`${jaOk}/${total}(${p2(jaOk,total)})`,'~100%','—','Progress terbaik'],
+             ['I Diff → Annunciator', `${jbOk}/${total}(${p2(jbOk,total)})`,'~50%','100%','Bottleneck konfigurasi'],
+             ['FO Fail → Dashboard',  `${jdOk}/${total}(${p2(jdOk,total)})`,'~80%','100%','Puncak bulan Oktober'],
+             ['I Diff → Dashboard',   `${jeOk}/${total}(${p2(jeOk,total)})`,'~70%','100%','Paralel dengan FO Fail'],
+             ['Semua 4 Indikasi',     `${s4Ok}/${total}(${p2(s4Ok,total)})`,'~50 bay','127 bay','Target akhir program'],
+        ].map(([ind,kini,t26,t27,cat],i)=>new TableRow({children:[ind,kini,t26,t27,cat].map((v,j)=>
+          dCell(v,rmCW[j],{fill:i%2===0?LGRAY:'FFFFFF',
+            align:j===0||j===4?AlignmentType.LEFT:AlignmentType.CENTER,sz:9}))})),
+      ]
+    }));
+
+    children.push(new Paragraph({pageBreakBefore:true,text:''}));
+
+    // ════ HAL 6: Rekomendasi & Kesimpulan ═════════════════════════════════
+    setW(82,'Halaman 6 — Rekomendasi…'); await new Promise(r=>setTimeout(r,20));
+    children.push(secHdr(7,'Rekomendasi dan Tindak Lanjut'));
+
+    children.push(...recBox('SEGERA (< 1 bulan)',RED+'22',RED,[
+      `Tetapkan target untuk bay yang belum ada target — koordinasi ULTG terkait.`,
+      `Bentuk task force monitoring untuk bulan-bulan puncak.`,
+      `Inventarisasi hambatan teknis konfigurasi I Diff Annunciator — hanya ${p2(jbOk,total)} selesai.`,
+    ]));
+    children.push(...recBox('JANGKA PENDEK (1–3 bulan)',AMBER+'22',AMBER,[
+      'Persiapkan resource teknis untuk bulan-bulan dengan bay terbanyak.',
+      'Update dashboard monit_lcd berkala — segera isi saat realisasi.',
+    ]));
+    children.push(...recBox('JANGKA MENENGAH (3–12 bulan)',GREEN+'22',GREEN,[
+      'Mulai program penarikan untuk 336 bay LCD non-kritikal.',
+      'Standardisasi konfigurasi relai LCD untuk mempercepat I Diff.',
+      'Pertimbangkan roadmap penggantian 270 bay Distance ke LCD untuk ruas kritikal.',
+    ]));
+
+    // Kesimpulan
+    children.push(new Paragraph({
+      spacing:{before:180,after:80},
+      border:{bottom:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:2}},
+      children:[new TextRun({text:'Kesimpulan',size:26,bold:true,font:'Arial',color:NAVY})]
+    }));
+    children.push(bodyP(`Program penarikan indikasi FO Fail dan I Diff untuk ${total} bay LCD jalur kritikal UITJBM (filter: ${filterDesc}) menunjukkan progres tidak merata antar UPT. Keberhasilan program ini akan langsung meningkatkan keandalan sistem proteksi pada jaringan transmisi 150 kV dan 500 kV Jawa Bali Madura.`));
+    children.push(spacer());
+
+    // Tanda tangan
+    const ttW=Math.floor(CW/3);
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        new TableRow({children:['Disiapkan oleh:','Mengetahui:','Tanggal:'].map(h=>new TableCell({
+          width:{size:ttW,type:WidthType.DXA},borders:border(),
+          shading:{type:ShadingType.CLEAR,fill:LGRAY},margins:cm3,
+          children:[new Paragraph({children:[new TextRun({text:h,size:18,bold:true,font:'Arial',color:NAVY})]})]}))
+        }),
+        new TableRow({children:['\n\n\n\n…………………………………','\n\n\n\n…………………………………','\n\n\n\n'+TODAY].map(v=>new TableCell({
+          width:{size:ttW,type:WidthType.DXA},borders:border(),margins:cm3,
+          children:[new Paragraph({children:[new TextRun({text:v,size:18,font:'Arial',color:NAVY})]})]}))
+        }),
+      ]
+    }));
+
+    // ════ HAL 7+: Tabel Data Bay Lengkap ══════════════════════════════════
+    children.push(new Paragraph({pageBreakBefore:true,text:''}));
+    children.push(secHdr(8,'Tabel Data Bay LCD Kritikal (sesuai filter)'));
+    children.push(new Paragraph({spacing:{before:0,after:80},
+      children:[new TextRun({text:`Menampilkan ${krit.length} bay. Filter: ${filterDesc}  |  ✓ = sudah  – = belum`,
+        size:16,font:'Arial',color:GRAY,italics:true})]}));
+
+    const dtCW=[cm(1.9),cm(1.5),cm(2.2),cm(3.5),cm(1.5),cm(1.5),cm(1.5),cm(1.5),cm(0.9)];
+    children.push(new Table({width:{size:CW,type:WidthType.DXA},layout:TableLayoutType.FIXED,
+      rows:[
+        new TableRow({children:['UPT','ULTG','Gardu Induk','Bay',
+          'FO Fail\nAnn.','I Diff\nAnn.','FO Fail\nDash.','I Diff\nDash.','Skor']
+          .map((h,i)=>hCell(h,dtCW[i],7))}),
+        ...krit.map((r,i)=>{
+          const bg=i%2===0?LGRAY:'FFFFFF';
+          const fv=(v,k)=>ok(v)?{text:'✓'+v.slice(0,8),color:GREEN,bold:true}:{text:'–',color:'BBBBBB',bold:false};
+          const vs=[r.upt_s,r.ultg.replace('ULTG ',''),
+            r.gi.replace(/GI(TET|STET|S)? /,'').slice(0,18),
+            r.bay.replace('PHT ','').slice(0,22),
+            ok(r.ja)?'✓'+r.ja.slice(0,8):'–',
+            ok(r.jb)?'✓'+r.jb.slice(0,8):'–',
+            ok(r.jd)?'✓'+r.jd.slice(0,8):'–',
+            ok(r.je)?'✓'+r.je.slice(0,8):'–',
+            r.skor+'/4'];
+          const cs=[NAVY,GRAY,GRAY,DKGRAY,
+            ok(r.ja)?GREEN:GRAY,ok(r.jb)?GREEN:GRAY,
+            ok(r.jd)?GREEN:GRAY,ok(r.je)?GREEN:GRAY,
+            r.skor===4?GREEN:r.skor===0?RED:AMBER];
+          return new TableRow({children:vs.map((v,j)=>dCell(v,dtCW[j],
+            {fill:bg,color:cs[j],bold:j===0||r.skor===4&&j===8,
+              align:j<=3?AlignmentType.LEFT:AlignmentType.CENTER,sz:7}))});
+        }),
+      ]
+    }));
+
+    setW(95,'Menyimpan file…'); await new Promise(r=>setTimeout(r,30));
+
+    // ── Build dokumen ───────────────────────────────────────────────────────
+    const doc = new Document({
+      creator:'Dashboard UITJBM', title:`Laporan LCD Kritikal UITJBM`,
+      numbering:{config:[{reference:'bullets',levels:[{
+        level:0,format:LevelFormat.BULLET,text:'•',alignment:AlignmentType.LEFT,
+        style:{paragraph:{indent:{left:cm(0.6),hanging:cm(0.3)},spacing:{before:30,after:60}}}}]}]},
+      styles:{default:{document:{run:{font:'Arial',size:20,color:DKGRAY}}}},
+      sections:[{
+        properties:{page:{
+          size:{width:cm(21),height:cm(29.7)},
+          margin:{top:cm(2),bottom:cm(2),left:cm(2.5),right:cm(2.5)}
+        }},
+        headers:{default:new Header({children:[new Paragraph({
+          border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:2}},
+          spacing:{after:0},
+          children:[new TextRun({text:'Dashboard Monitoring Relai LCD — UITJBM',size:16,font:'Arial',color:GRAY})]
+        })]})},
+        footers:{default:new Footer({children:[new Paragraph({
+          border:{top:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:2}},
+          alignment:AlignmentType.CENTER,
+          children:[
+            new TextRun({text:'Laporan LCD Kritikal UITJBM  |  Rahasia Internal    Hal. ',size:15,font:'Arial',color:GRAY}),
+            new TextRun({children:[PageNumber.CURRENT],size:15,font:'Arial',color:GRAY}),
+            new TextRun({text:' dari ',size:15,font:'Arial',color:GRAY}),
+            new TextRun({children:[PageNumber.TOTAL_PAGES],size:15,font:'Arial',color:GRAY}),
+          ]
+        })]})},
+        children
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
     a.href=url; a.download=`Laporan_LCD_Kritikal_UITJBM_${FILE_DATE}.docx`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
 
     setW(100,'Selesai! File .docx sudah diunduh.');
     await new Promise(r=>setTimeout(r,1000));
@@ -740,6 +1177,7 @@ async function exportWord(withCharts=true) {
     setTimeout(()=>modal.classList.remove('show'),5000);
   }
 }
+
 </script>
 </body>
 </html>
