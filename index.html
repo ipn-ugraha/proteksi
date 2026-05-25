@@ -233,15 +233,15 @@ footer a{color:var(--blue);}
 <!-- Timeline (full width) -->
 <div class="grid2">
   <div class="chart-box full">
-    <h3>Timeline Target Penarikan ke Dashboard &amp; EWS (JF)</h3>
-    <p class="desc">Jumlah bay target selesai per bulan — warna sesuai tahun · basis data kolom Target Dashboard</p>
-    <div class="chart-wrap" style="height:220px">
+    <h3>Timeline Realisasi &amp; Target Penarikan ke Dashboard &amp; EWS</h3>
+    <p class="desc">Hijau = sudah realisasi (kolom JD/JE terisi tanggal) · Biru = target 2026 belum realisasi · Abu = target 2027+ belum realisasi</p>
+    <div class="chart-wrap" style="height:240px">
       <canvas id="ch-tl" role="img" aria-label="Bar chart timeline target JF per bulan"></canvas>
     </div>
     <div class="leg">
-      <span class="li"><span class="ls" style="background:#16a34a"></span>2025</span>
-      <span class="li"><span class="ls" style="background:#2563eb"></span>2026</span>
-      <span class="li"><span class="ls" style="background:#94a3b8"></span>2027+</span>
+      <span class="li"><span class="ls" style="background:#16a34a"></span>✅ Realisasi (JD/JE sudah terisi)</span>
+      <span class="li"><span class="ls" style="background:#2563eb"></span>🎯 Target 2026 (belum realisasi)</span>
+      <span class="li"><span class="ls" style="background:#94a3b8"></span>📋 Target 2027+ (belum realisasi)</span>
     </div>
   </div>
 </div>
@@ -374,6 +374,13 @@ function skor(r) {
 function parseYM(v) {
   if (!v) return null;
   const s = v.toUpperCase().trim();
+  // Format dd/mm/yyyy atau d/m/yyyy (e.g. "01/04/2026", "06/05/2026")
+  const dmyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmyMatch) {
+    const mo = parseInt(dmyMatch[2]), yr = parseInt(dmyMatch[3]);
+    if (mo >= 1 && mo <= 12) return {yr, mo, label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`};
+  }
+  // Format nama bulan tahun (e.g. "April 2026", "SEPTEMBER 2026")
   let mo = null, yr = null;
   for (const [k,mv] of Object.entries(BLN)) { if (s.includes(k)) { mo = mv; break; } }
   for (const y of ['2024','2025','2026','2027','2028']) { if (s.includes(y)) { yr = parseInt(y); break; } }
@@ -532,28 +539,93 @@ function renderMatrix(lcd) {
   }).join('');
 }
 
-// Timeline
+// Timeline — 3 layer: Realisasi (JD/JE sudah terisi), Target 2026, Target 2027+
 function renderTimeline(lcd) {
-  const mo = {};
+  // Kumpulkan per bulan: realisasi (dari JD atau JE) dan target (dari JF)
+  const real = {}; // bulan realisasi
+  const tgt  = {}; // bulan target yang belum realisasi
+
   for (const r of lcd) {
-    const ym = parseYM(r.jf);
-    if (ym) { const k=`${ym.yr}-${String(ym.mo).padStart(2,'0')}`; mo[k]=(mo[k]||0)+1; }
+    // Realisasi: bay yang JD atau JE sudah terisi tanggal → ambil bulan dari JD (atau JE jika JD kosong)
+    const ymReal = parseYM(r.jd) || parseYM(r.je);
+    // Target: dari kolom JF
+    const ymTgt  = parseYM(r.jf);
+
+    if (ymReal) {
+      const k = `${ymReal.yr}-${String(ymReal.mo).padStart(2,'0')}`;
+      real[k] = (real[k] || 0) + 1;
+    } else if (ymTgt) {
+      // Hanya masuk target jika belum realisasi
+      const k = `${ymTgt.yr}-${String(ymTgt.mo).padStart(2,'0')}`;
+      tgt[k] = (tgt[k] || 0) + 1;
+    }
   }
-  const keys = Object.keys(mo).sort();
-  const labels = keys.map(k => { const [y,m]=k.split('-'); return `${MO_LABEL[+m]} '${y.slice(2)}`; });
-  const vals   = keys.map(k=>mo[k]);
-  const clrs   = keys.map(k=>k.startsWith('2025')?'#16a34a':k.startsWith('2026')?'#2563eb':'#94a3b8');
+
+  // Gabungkan semua bulan
+  const allKeys = [...new Set([...Object.keys(real), ...Object.keys(tgt)])].sort();
+  const labels  = allKeys.map(k => {
+    const [y,m] = k.split('-');
+    return `${MO_LABEL[+m]} '${y.slice(2)}`;
+  });
+  const dataReal = allKeys.map(k => real[k] || 0);
+  const dataTgt2026 = allKeys.map(k => (k.startsWith('2026') && !real[k]) ? (tgt[k] || 0) : 0);
+  const dataTgt2027 = allKeys.map(k => (!k.startsWith('2026') && !real[k]) ? (tgt[k] || 0) : 0);
+
   if (CHARTS.tl) CHARTS.tl.destroy();
   CHARTS.tl = new Chart($('ch-tl'), {
-    type:'bar',
-    data:{labels,datasets:[{label:'Bay',data:vals,backgroundColor:clrs,borderRadius:4,borderSkipped:false}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw} bay`}}},
-      scales:{
-        x:{ticks:{font:{size:10}},grid:{display:false}},
-        y:{ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,.04)'},
-          title:{display:true,text:'Jumlah bay',font:{size:10}}}
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Realisasi (JD/JE sudah terisi)',
+          data: dataReal,
+          backgroundColor: '#16a34a',
+          borderRadius: 4,
+          borderSkipped: false,
+          stack: 'a'
+        },
+        {
+          label: 'Target 2026 (belum realisasi)',
+          data: dataTgt2026,
+          backgroundColor: '#2563eb',
+          borderRadius: 4,
+          borderSkipped: false,
+          stack: 'a'
+        },
+        {
+          label: 'Target 2027+ (belum realisasi)',
+          data: dataTgt2027,
+          backgroundColor: '#94a3b8',
+          borderRadius: 4,
+          borderSkipped: false,
+          stack: 'a'
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            title: items => `📅 ${items[0].label}`,
+            label: ctx => {
+              if (!ctx.raw) return null;
+              return `${ctx.dataset.label}: ${ctx.raw} bay`;
+            },
+            footer: items => {
+              const total = items.reduce((s,i) => s + (i.raw||0), 0);
+              return total ? `Total: ${total} bay` : null;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: { stacked: true, ticks: { font: { size: 11 } }, grid: { color: 'rgba(0,0,0,.04)' },
+          title: { display: true, text: 'Jumlah bay', font: { size: 10 } } }
       }
     }
   });
