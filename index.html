@@ -240,7 +240,7 @@ const UPT_CLR = { BALI:'#2563eb',GRESIK:'#16a34a',MADIUN:'#d97706',MALANG:'#7c3a
 const BLN = { JANUARI:1,FEBRUARI:2,MARET:3,APRIL:4,MEI:5,JUNI:6,JULI:7,AGUSTUS:8,SEPTEMBER:9,OKTOBER:10,NOVEMBER:11,DESEMBER:12 };
 const MO_LABEL = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
-const ok = v => v && v.trim() !== '' && v.trim() !== '-';
+function ok(v){ return v && v.trim() !== '' && v.trim() !== '-'; }
 
 function parseYM(v) {
   if (!v) return null;
@@ -254,6 +254,11 @@ function parseYM(v) {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
+// ── HELPERS GLOBAL ──
+function $(id){ return document.getElementById(id); }
+function set(id,v){ var el=$(id); if(el) el.textContent=v; }
+function pct(n,t){ return t ? Math.round(n/t*100) : 0; }
+
 document.addEventListener('DOMContentLoaded', function() {
   function waitForChart(cb) {
     if (typeof Chart !== 'undefined') { cb(); }
@@ -406,10 +411,7 @@ function renderTable(data) {
   body.innerHTML=data.map(r=>{const clr=UPT_CLR[r.upt_s]||'#94a3b8';const segs=[ok(r.ja),ok(r.jb),ok(r.jd),ok(r.je)].map(s=>`<div class="ss ${s?'ss-on':'ss-off'}"></div>`).join('');const sc=r.skor===4?'var(--green)':r.skor===0?'var(--red)':'var(--amber)';const sd=JSON.stringify({ja:r.ja||'',jb:r.jb||'',jd:r.jd||'',je:r.je||''}).replace(/"/g,'&quot;');return`<tr><td style="white-space:nowrap"><span class="udot" style="background:${clr}"></span>${r.upt_s}</td><td style="white-space:nowrap;color:var(--muted)">${r.ultg.replace('ULTG ','')}</td><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.gi}">${r.gi}</td><td style="max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.bay}">${r.bay}</td><td><span class="tag ${r.kritikal==='YA'?'t-ya':'t-no'}">${r.kritikal||'–'}</span></td><td>${jTag(r)}</td><td style="text-align:center">${dotCell(r.ja,'FO Fail → Annunciator')}</td><td style="text-align:center">${dotCell(r.jb,'I Diff → Annunciator')}</td><td style="text-align:center">${dotCell(r.jd,'FO Fail → Dashboard')}</td><td style="text-align:center">${dotCell(r.je,'I Diff → Dashboard')}</td><td style="font-size:11px;color:var(--muted)">${r.jc||'–'}</td><td style="font-size:11px;color:var(--muted)">${r.jf||'–'}</td><td style="text-align:center"><b class="skor-b" style="color:${sc};cursor:pointer" data-skor='${sd}'>${r.skor}/4</b><div class="skor-bar">${segs}</div></td></tr>`;}).join('');
 }
 
-// ── HELPERS ──
-const $ = id => document.getElementById(id);
-const set = (id,v) => { const el=$(id); if(el) el.textContent=v; };
-const pct = (n,t) => t ? Math.round(n/t*100) : 0;
+// ── HELPERS (see global scope) ──
 
 // ── TOOLTIP ENGINE ──
 (function(){
