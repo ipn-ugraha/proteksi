@@ -163,16 +163,76 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
 
 footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;border-top:1px solid var(--border);margin-top:10px;}
 footer a{color:var(--blue);}
+
+/* ── TOMBOL PDF ── */
+.btn-pdf{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--blue);color:#fff;
+  font-size:12px;font-weight:600;
+  padding:7px 16px;border-radius:7px;border:none;cursor:pointer;
+  transition:background .15s,transform .1s;white-space:nowrap;
+}
+.btn-pdf:hover{background:var(--blue-dk);}
+.btn-pdf:active{transform:scale(.97);}
+.btn-pdf svg{flex-shrink:0;}
+
+/* ── PRINT / PDF ── */
+@media print{
+  /* Reset layout */
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+  body{background:#fff !important;font-size:11px;}
+  header{padding:10px 16px;border-bottom:2px solid #2563eb;}
+  .btn-pdf,#status-badge,.filter-bar,#count-badge,.badge-live,.badge-err,
+  .tip-box,.skor-tip-box,#loader{display:none !important;}
+  main{max-width:100%;padding:8px 12px;}
+  /* Grid 1 kolom di print */
+  .grid2{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .chart-box{padding:10px 12px;break-inside:avoid;border:1px solid #e2e8f0;}
+  .chart-box h3{font-size:10px;}
+  .chart-box .desc{font-size:9px;}
+  /* Chart height lebih kecil */
+  .chart-wrap canvas{max-height:160px !important;}
+  /* Cards */
+  .cards{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+  .card{padding:8px 10px;}
+  .card .val{font-size:20px;}
+  .card .lbl,.card .sub{font-size:9px;}
+  /* Progress bar */
+  .prog-track{height:7px;}
+  /* Tabel */
+  .tbl-wrap{box-shadow:none;border:1px solid #e2e8f0;}
+  .dt thead th{font-size:8px;padding:5px 7px;background:#1e3a5f !important;color:#fff !important;}
+  .dt tbody td{font-size:8px;padding:4px 7px;}
+  /* Matriks */
+  .mtx th,.mtx td{font-size:8px;padding:4px 6px;}
+  /* Timestamp di pojok kanan atas saat print */
+  header::after{
+    content:"Dicetak: " attr(data-print-time);
+    font-size:9px;color:#64748b;
+    position:absolute;right:16px;top:14px;
+  }
+  /* Page break sebelum tabel data */
+  .sec-title{page-break-before:always;padding-top:8px;}
+  .tbl-wrap .dt tbody{display:table-row-group;}
+}
 </style>
 </head>
 <body>
 
-<header>
+<header id="main-header">
   <div class="header-left">
     <h1>📊 Dashboard Monitoring Relai LCD — UITJBM</h1>
     <p>Penarikan Indikasi FO Fail &amp; I Diff → Annunciator dan Dashboard &amp; EWS</p>
   </div>
-  <span id="status-badge" class="badge-live">⏳ Memuat data…</span>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <button class="btn-pdf" onclick="exportPDF()" title="Cetak / Simpan sebagai PDF">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
+      </svg>
+      Unduh PDF
+    </button>
+    <span id="status-badge" class="badge-live">⏳ Memuat data…</span>
+  </div>
 </header>
 
 <main>
@@ -830,6 +890,23 @@ async function init() {
     $('status-badge').textContent = 'Error';
     $('status-badge').className = 'badge-err';
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXPORT PDF
+// ═══════════════════════════════════════════════════════════
+function exportPDF() {
+  // Sisipkan timestamp ke header supaya muncul saat print
+  const now = new Date();
+  const ts = now.toLocaleDateString('id-ID', {day:'2-digit',month:'long',year:'numeric'})
+           + ' ' + now.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('main-header').setAttribute('data-print-time', ts);
+
+  // Paksa semua chart render ulang supaya tidak blank saat print
+  Object.values(CHARTS).forEach(ch => { if (ch && ch.resize) ch.resize(); });
+
+  // Beri jeda sebentar agar chart selesai render, baru print
+  setTimeout(() => { window.print(); }, 300);
 }
 
 init();
