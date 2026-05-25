@@ -124,11 +124,17 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
     <p>Penarikan Indikasi FO Fail &amp; I Diff → Annunciator dan Dashboard &amp; EWS</p>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <button class="btn-word" onclick="exportWord()">
+    <button class="btn-word" onclick="exportWord(true)" title="Laporan Word dengan grafik">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
       </svg>
-      Laporan Word
+      Word + Grafik
+    </button>
+    <button class="btn-word" onclick="exportWord(false)" title="Laporan Word tanpa grafik (lebih ringan)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
+      </svg>
+      Word (Tabel)
     </button>
     <span id="status-badge" class="badge-live">⏳ Memuat data…</span>
   </div>
@@ -463,7 +469,7 @@ init();
 
 
 // ── EXPORT WORD (global scope) ───────────────────────────────────────────
-async function exportWord() {
+async function exportWord(withCharts=true) {
   const modal = document.getElementById('word-modal');
   modal.classList.add('show');
   const setW = (pct, msg) => {
@@ -496,15 +502,33 @@ async function exportWord() {
     const TODAY=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
     const FILE_DATE=new Date().toISOString().slice(0,10);
 
-    setW(12,'Mengambil gambar grafik…');
+    setW(12, withCharts ? 'Mengambil gambar grafik…' : 'Menyiapkan tabel…');
     await new Promise(r=>setTimeout(r,80));
     async function captureChart(id) {
-      const canvas=document.getElementById(id); if(!canvas)return null;
-      try{const d=canvas.toDataURL('image/png');return{base64:d.replace('data:image/png;base64,',''),w:canvas.width,h:canvas.height};}catch(e){return null;}
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      try {
+        // Resize ke lebar max 900px untuk kurangi ukuran file
+        const MAX_W = 600;
+        let w = canvas.width, h = canvas.height;
+        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+        const c2 = document.createElement('canvas');
+        c2.width = w; c2.height = h;
+        const ctx2 = c2.getContext('2d');
+        ctx2.fillStyle = '#ffffff';
+        ctx2.fillRect(0, 0, w, h);
+        ctx2.drawImage(canvas, 0, 0, w, h);
+        const d = c2.toDataURL('image/jpeg', 0.75);
+        const b64 = d.replace('data:image/jpeg;base64,','');
+        console.log(`Chart ${id}: ${w}x${h}, b64 size=${b64.length} bytes`);
+        return { base64: b64, w, h, type:'jpeg' };
+      } catch(e) { return null; }
     }
     const imgs={};
-    for(const[k,id]of Object.entries({jenis:'ch-jenis',uptAnn:'ch-upt-ann',uptEws:'ch-upt-ews',tlAnn:'ch-tl-ann',tlEws:'ch-tl-ews'})){
-      imgs[k]=await captureChart(id); setW(12+Object.keys(imgs).length*5,''); await new Promise(r=>setTimeout(r,30));
+    if (withCharts) {
+      for(const[k,id]of Object.entries({jenis:'ch-jenis',uptAnn:'ch-upt-ann',uptEws:'ch-upt-ews',tlAnn:'ch-tl-ann',tlEws:'ch-tl-ews'})){
+        imgs[k]=await captureChart(id); setW(12+Object.keys(imgs).length*5,''); await new Promise(r=>setTimeout(r,30));
+      }
     }
 
     const NAVY='1e3a5f',BLUE='2563eb',GREEN='16a34a',RED='dc2626',AMBER='d97706',PURPLE='7c3aed',GRAY='64748b',LGRAY='f1f5f9',WHITE='FFFFFF';
@@ -539,9 +563,14 @@ async function exportWord() {
       try {
         items.push(new Paragraph({
           children:[new ImageRun({
-            data: Uint8Array.from(atob(imgData.base64), c => c.charCodeAt(0)),
+            data: (function(){
+              const b=atob(imgData.base64);
+              const arr=new Uint8Array(b.length);
+              for(let i=0;i<b.length;i++) arr[i]=b.charCodeAt(i);
+              return arr;
+            })(),
             transformation: { width: targetWemu, height: targetHemu },
-            type: 'png',
+            type: imgData.type || 'jpeg',
           })],
           alignment: AlignmentType.CENTER,
           spacing: {before:60, after:40},
@@ -671,7 +700,14 @@ async function exportWord() {
 
     const doc2=new Document({creator:'Dashboard UITJBM',title:`Laporan LCD Kritikal UITJBM`,description:`Filter: ${filterDesc}`,styles:{default:{document:{run:{font:'Calibri',size:20}},heading2:{run:{color:BLUE,bold:true,size:22},paragraph:{spacing:{before:180,after:80}}}}},sections:[{properties:{page:{margin:{top:cm(2),bottom:cm(2),left:cm(2.5),right:cm(2.5)}}},headers:{default:new Header({children:[new Paragraph({children:[new TextRun({text:'Dashboard Monitoring Relai LCD — UITJBM',color:GRAY,size:16})],border:{bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:3}},spacing:{after:0}})]})},footers:{default:new Footer({children:[new Paragraph({children:[new TextRun({text:'Laporan Monitoring LCD Kritikal UITJBM  |  Rahasia Internal    Hal. ',size:15,color:GRAY}),new TextRun({children:[PageNumber.CURRENT],size:15,color:GRAY}),new TextRun({text:' dari ',size:15,color:GRAY}),new TextRun({children:[PageNumber.TOTAL_PAGES],size:15,color:GRAY})],alignment:AlignmentType.CENTER,border:{top:{style:BorderStyle.SINGLE,size:4,color:BLUE,space:3}}})]})},children}]});
 
-    const blob=await Packer.toBlob(doc2);
+    // Validasi dokumen sebelum build
+    let blob;
+    try {
+      blob = await Packer.toBlob(doc2);
+    } catch(packErr) {
+      console.error('Packer error:', packErr);
+      throw new Error('Gagal membuat file Word: ' + packErr.message);
+    }
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url; a.download=`Laporan_LCD_Kritikal_UITJBM_${FILE_DATE}.docx`;
