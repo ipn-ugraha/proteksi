@@ -930,7 +930,12 @@ async function exportWord(withCharts) {
     }));
     children.push(spacer());
 
-    children.push(subHdr('Temuan Kritis''PROBOLINGGO');
+    children.push(subHdr('Temuan Kritis'));
+    const pKritis=[
+      `I Diff Annunciator hanya ${p2(jbOk,total)} — bottleneck terbesar, konfigurasi khusus per tipe relai.`,
+    ];
+    // Tambah 16 bay Probolinggo hanya jika ada
+    const proboData = upt_data.find(r=>r.upt==='PROBOLINGGO');
     const belumTgt = krit.filter(r=>r.upt_s==='PROBOLINGGO'&&!parseYM(r.jf)&&!ok(r.jd)).length;
     if(belumTgt>0) pKritis.push(`${belumTgt} bay Probolinggo tanpa target — jalur 500 kV kritis (GISTET Paiton–Grati, GITET Grati–Krian).`);
     const bali=upt_data.find(r=>r.upt==='BALI');
