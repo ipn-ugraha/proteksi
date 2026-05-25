@@ -184,8 +184,8 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
 </div>
 
 <div class="grid2">
-  <div class="chart-box"><h3>Status Annunciator per UPT</h3><p class="desc">FO Fail & I Diff → Annunciator (JA & JB) · bay LCD</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ann"></canvas></div><div class="leg"><span class="li"><span class="ls" style="background:#2563eb"></span>FO Fail Ann. (JA)</span><span class="li"><span class="ls" style="background:#dc2626"></span>I Diff Ann. (JB)</span><span class="li"><span class="ls" style="background:#e2e8f0"></span>Belum</span></div></div>
-  <div class="chart-box"><h3>Status Dashboard &amp; EWS per UPT</h3><p class="desc">FO Fail & I Diff → Dashboard (JD & JE) · bay LCD</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ews"></canvas></div><div class="leg"><span class="li"><span class="ls" style="background:#16a34a"></span>FO Fail Dash. (JD)</span><span class="li"><span class="ls" style="background:#7c3aed"></span>I Diff Dash. (JE)</span><span class="li"><span class="ls" style="background:#e2e8f0"></span>Belum</span></div></div>
+  <div class="chart-box"><h3>Status Annunciator per UPT</h3><p class="desc">FO Fail & I Diff → Annunciator (JA & JB) · bay LCD sudah ditarik</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ann"></canvas></div></div>
+  <div class="chart-box"><h3>Status Dashboard &amp; EWS per UPT</h3><p class="desc">FO Fail & I Diff → Dashboard (JD & JE) · bay LCD sudah ditarik</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ews"></canvas></div></div>
 </div>
 
 <div class="grid2">
@@ -365,12 +365,30 @@ function makeUptChart(canvasId,lcd,keyA,keyB,colorA,colorB,labelA,labelB,chartKe
   const totals=upts.map(u=>lcd.filter(r=>r.upt_s===u).length);
   const dA=upts.map(u=>lcd.filter(r=>r.upt_s===u&&ok(r[keyA])).length);
   const dB=upts.map(u=>lcd.filter(r=>r.upt_s===u&&ok(r[keyB])).length);
-  const dBelum=upts.map((_,i)=>Math.max(0,totals[i]-dA[i]-dB[i]));
+  const belumA=totals.map((t,i)=>t-dA[i]);
+  const belumB=totals.map((t,i)=>t-dB[i]);
   if(CHARTS[chartKey]) CHARTS[chartKey].destroy();
-  CHARTS[chartKey]=new Chart($(canvasId),{type:'bar',data:{labels:upts,datasets:[{label:labelA,data:dA,backgroundColor:colorA,borderRadius:2,stack:'s'},{label:labelB,data:dB,backgroundColor:colorB,borderRadius:2,stack:'s'},{label:'Belum',data:dBelum,backgroundColor:'#e2e8f0',borderRadius:2,stack:'s'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>ctx.raw>0?`${ctx.dataset.label}: ${ctx.raw} bay`:null}}},scales:{x:{stacked:true,ticks:{font:{size:10}},grid:{display:false}},y:{stacked:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}}}}});
+  CHARTS[chartKey]=new Chart($(canvasId),{type:'bar',data:{labels:upts,datasets:[
+    {label:labelA,         data:dA,     backgroundColor:colorA,   stack:'a', barPercentage:0.4, categoryPercentage:0.85, borderRadius:0},
+    {label:'Belum '+labelA,data:belumA, backgroundColor:'#cbd5e1', stack:'a', barPercentage:0.4, categoryPercentage:0.85, borderRadius:3},
+    {label:labelB,         data:dB,     backgroundColor:colorB,   stack:'b', barPercentage:0.4, categoryPercentage:0.85, borderRadius:0},
+    {label:'Belum '+labelB,data:belumB, backgroundColor:'#cbd5e1', stack:'b', barPercentage:0.4, categoryPercentage:0.85, borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},
+        filter:item=>!item.text.startsWith('Belum ')||item.datasetIndex===1}},
+      tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>ctx.raw>0?`${ctx.dataset.label}: ${ctx.raw} bay`:null}}
+    },
+    scales:{
+      x:{stacked:true,ticks:{font:{size:10}},grid:{display:false}},
+      y:{stacked:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.04)'},
+         title:{display:true,text:'bay',font:{size:9},color:'#94a3b8'}}
+    }
+  }});
 }
-function renderUptAnnChart(lcd){makeUptChart('ch-upt-ann',lcd,'ja','jb','#2563eb','#dc2626','FO Fail Ann.','I Diff Ann.','uptann');}
-function renderUptEwsChart(lcd){makeUptChart('ch-upt-ews',lcd,'jd','je','#16a34a','#7c3aed','FO Fail Dash.','I Diff Dash.','uptews');}
+}
+function renderUptAnnChart(lcd){makeUptChart('ch-upt-ann',lcd,'ja','jb','#2563eb','#0891b2','FO Fail Ann. (JA)','I Diff Ann. (JB)','uptann');}
+function renderUptEwsChart(lcd){makeUptChart('ch-upt-ews',lcd,'jd','je','#16a34a','#f59e0b','FO Fail Dash. (JD)','I Diff Dash. (JE)','uptews');}
 
 function renderMatrix(lcd) {
   const upts=[...new Set(lcd.map(r=>r.upt_s))].sort();
