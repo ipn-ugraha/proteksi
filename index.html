@@ -105,11 +105,43 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
 .t-lcd{background:var(--blue-lt);color:var(--blue-dk);}
 .t-dist{background:#f1f5f9;color:var(--muted);}
 .t-other{background:#f0fdf4;color:#166534;}
-.dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+/* ── DOT ── */
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;cursor:pointer;transition:transform .15s;}
 .dot.d-ok{background:var(--green);}
-.dot.d-no{background:#e2e8f0;}
-.dot.has-tip{width:12px;height:12px;transition:transform .1s;}
-.dot.has-tip:hover{transform:scale(1.5);}
+.dot.d-no{background:#d1d5db;}
+.dot:hover{transform:scale(1.7);}
+
+/* ── CUSTOM TOOLTIP ── */
+.tip-wrap{position:relative;display:inline-block;}
+.tip-box{
+  display:none;position:fixed;z-index:9999;
+  background:#1e293b;color:#f8fafc;
+  font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  line-height:1.6;white-space:nowrap;
+  padding:8px 12px;border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.35);
+  pointer-events:none;
+}
+.tip-box.tip-ok::before{content:'✅ ';font-size:13px;}
+.tip-box.tip-no::before{content:'⏳ ';font-size:13px;}
+.tip-box .tip-date{color:#86efac;font-weight:700;}
+.tip-box .tip-label{color:#94a3b8;}
+
+/* Skor cell tooltip */
+.skor-tip-box{
+  display:none;position:fixed;z-index:9999;
+  background:#1e293b;color:#f8fafc;
+  font-size:11.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  line-height:1.8;
+  padding:8px 14px;border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.35);
+  pointer-events:none;min-width:220px;
+}
+.skor-tip-box .row-ok{color:#86efac;}
+.skor-tip-box .row-no{color:#94a3b8;}
+.skor-tip-box .tip-title{font-weight:700;color:#e2e8f0;border-bottom:1px solid #334155;padding-bottom:4px;margin-bottom:4px;display:block;}
+
 .skor-bar{display:flex;gap:2px;margin-top:3px;justify-content:center;}
 .ss{width:13px;height:4px;border-radius:2px;}
 .ss-on{background:var(--blue);}
@@ -144,6 +176,10 @@ footer a{color:var(--blue);}
 </header>
 
 <main>
+
+<!-- Global tooltip elements -->
+<div class="tip-box" id="g-tip"></div>
+<div class="skor-tip-box" id="g-skor-tip"></div>
 
 <div id="loader"><div class="spinner"></div>Mengambil data dari Google Sheets…</div>
 
@@ -725,15 +761,13 @@ function renderTable(data) {
     return r.jenis ? `<span class="tag">${r.jenis}</span>` : '–';
   };
 
-  // Dot dengan tooltip tanggal realisasi
+  // Dot dengan custom tooltip via data-* attributes
   const dotCell = (val, label) => {
     const done = ok(val);
     if (done) {
-      // val bisa berupa tanggal dd/mm/yyyy atau nama bulan → tampilkan apa adanya
-      const tip = `✅ ${label}: ${val}`;
-      return `<span class="dot d-ok has-tip" title="${tip}" style="cursor:default"></span>`;
+      return `<span class="dot d-ok" data-tip-ok="1" data-tip-label="${label}" data-tip-val="${val}"></span>`;
     }
-    return `<span class="dot d-no has-tip" title="⏳ ${label}: belum ditarik" style="cursor:default"></span>`;
+    return `<span class="dot d-no" data-tip-no="1" data-tip-label="${label}"></span>`;
   };
 
   body.innerHTML = data.map(r => {
@@ -742,13 +776,10 @@ function renderTable(data) {
       .map(s=>`<div class="ss ${s?'ss-on':'ss-off'}"></div>`).join('');
     const sc = r.skor===4?'var(--green)':r.skor===0?'var(--red)':'var(--amber)';
 
-    // Tooltip gabungan untuk kolom skor
-    const tipLines = [
-      `FO Fail → Ann.   : ${ok(r.ja) ? r.ja : 'belum'}`,
-      `I Diff → Ann.    : ${ok(r.jb) ? r.jb : 'belum'}`,
-      `FO Fail → Dash.  : ${ok(r.jd) ? r.jd : 'belum'}`,
-      `I Diff → Dash.   : ${ok(r.je) ? r.je : 'belum'}`,
-    ].join('&#10;');
+    // Encode skor detail sebagai JSON di data attribute
+    const skorData = JSON.stringify({
+      ja: r.ja||'', jb: r.jb||'', jd: r.jd||'', je: r.je||''
+    }).replace(/"/g,'&quot;');
 
     return `<tr>
       <td style="white-space:nowrap"><span class="udot" style="background:${clr}"></span>${r.upt_s}</td>
@@ -764,7 +795,7 @@ function renderTable(data) {
       <td style="font-size:11px;color:var(--muted);white-space:nowrap">${r.jc||'–'}</td>
       <td style="font-size:11px;color:var(--muted);white-space:nowrap">${r.jf||'–'}</td>
       <td style="text-align:center">
-        <b style="color:${sc};cursor:help" title="${tipLines}">${r.skor}/4</b>
+        <b class="skor-b" style="color:${sc};cursor:pointer" data-skor='${skorData}'>${r.skor}/4</b>
         <div class="skor-bar">${segs}</div>
       </td>
     </tr>`;
@@ -819,6 +850,93 @@ async function init() {
 }
 
 init();
+
+// ═══════════════════════════════════════════════════════════
+//  CUSTOM TOOLTIP ENGINE
+// ═══════════════════════════════════════════════════════════
+(function() {
+  const tip     = document.getElementById('g-tip');
+  const skorTip = document.getElementById('g-skor-tip');
+
+  function pos(el, box) {
+    const r = el.getBoundingClientRect();
+    const GAP = 10;
+    let left = r.left + r.width/2 - box.offsetWidth/2;
+    let top  = r.top - box.offsetHeight - GAP;
+    // Jika keluar kiri/kanan layar
+    left = Math.max(8, Math.min(left, window.innerWidth - box.offsetWidth - 8));
+    // Jika keluar atas → tampilkan di bawah
+    if (top < 8) top = r.bottom + GAP;
+    box.style.left = left + 'px';
+    box.style.top  = top  + 'px';
+  }
+
+  // ── Tooltip titik dot ──────────────────────────────────────
+  document.addEventListener('mouseover', function(e) {
+    const el = e.target.closest('[data-tip-ok],[data-tip-no]');
+    if (!el) return;
+
+    const label = el.dataset.tipLabel || '';
+    const val   = el.dataset.tipVal   || '';
+    const isOk  = 'tipOk' in el.dataset;
+
+    if (isOk) {
+      tip.className = 'tip-box tip-ok';
+      tip.innerHTML = `<span class="tip-label">${label}</span><br><span class="tip-date">${val}</span>`;
+    } else {
+      tip.className = 'tip-box tip-no';
+      tip.innerHTML = `<span class="tip-label">${label}</span><br><span style="color:#fca5a5">Belum ditarik</span>`;
+    }
+    tip.style.display = 'block';
+    pos(el, tip);
+  });
+
+  document.addEventListener('mouseout', function(e) {
+    const el = e.target.closest('[data-tip-ok],[data-tip-no]');
+    if (!el) return;
+    tip.style.display = 'none';
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (tip.style.display === 'none') return;
+    const el = e.target.closest('[data-tip-ok],[data-tip-no]');
+    if (el) pos(el, tip);
+  });
+
+  // ── Tooltip skor (hover angka X/4) ─────────────────────────
+  const IND = [
+    { key:'ja', label:'FO Fail → Annunciator' },
+    { key:'jb', label:'I Diff → Annunciator'  },
+    { key:'jd', label:'FO Fail → Dashboard'   },
+    { key:'je', label:'I Diff → Dashboard'    },
+  ];
+
+  document.addEventListener('mouseover', function(e) {
+    const el = e.target.closest('.skor-b');
+    if (!el) return;
+    let d = {};
+    try { d = JSON.parse(el.dataset.skor); } catch(err) { return; }
+    const rows = IND.map(ind => {
+      const v = d[ind.key];
+      return v
+        ? `<div class="row-ok">✅ ${ind.label}: <b>${v}</b></div>`
+        : `<div class="row-no">⬜ ${ind.label}: belum</div>`;
+    }).join('');
+    skorTip.innerHTML = `<span class="tip-title">Detail Realisasi</span>${rows}`;
+    skorTip.style.display = 'block';
+    pos(el, skorTip);
+  });
+
+  document.addEventListener('mouseout', function(e) {
+    if (e.target.closest('.skor-b')) skorTip.style.display = 'none';
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (skorTip.style.display === 'none') return;
+    const el = e.target.closest('.skor-b');
+    if (el) pos(el, skorTip);
+  });
+})();
 </script>
 </body>
 </html>
