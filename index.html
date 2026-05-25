@@ -282,19 +282,36 @@ footer a{color:var(--blue);}
     </div>
   </div>
 </div>
+<!-- Timeline — 2 chart berdampingan -->
 <div class="grid2">
-  <div class="chart-box full">
-    <h3>Timeline Realisasi &amp; Target Penarikan ke Dashboard &amp; EWS</h3>
-    <p class="desc">Bar = jumlah bay per bulan · Garis = akumulasi kumulatif (realisasi hijau, target+realisasi oranye)</p>
-    <div class="chart-wrap" style="height:300px">
-      <canvas id="ch-tl" role="img" aria-label="Mixed bar line chart timeline realisasi dan target per bulan"></canvas>
+  <!-- Annunciator -->
+  <div class="chart-box">
+    <h3>Timeline Annunciator (JA &amp; JB)</h3>
+    <p class="desc">FO Fail & I Diff → Annunciator · bar per bulan + garis kumulatif</p>
+    <div class="chart-wrap" style="height:270px">
+      <canvas id="ch-tl-ann" role="img" aria-label="Timeline annunciator per bulan"></canvas>
     </div>
     <div class="leg">
-      <span class="li"><span class="ls" style="background:#16a34a"></span>✅ Realisasi per bulan (bar)</span>
-      <span class="li"><span class="ls" style="background:#2563eb"></span>🎯 Target 2026 per bulan (bar)</span>
-      <span class="li"><span class="ls" style="background:#94a3b8"></span>📋 Target 2027+ per bulan (bar)</span>
-      <span class="li"><span style="display:inline-block;width:24px;height:3px;background:#16a34a;border-radius:2px;vertical-align:middle"></span>&nbsp;Kumulatif realisasi (garis)</span>
-      <span class="li"><span style="display:inline-block;width:24px;height:3px;background:#f59e0b;border-radius:2px;vertical-align:middle;border-top:2px dashed #f59e0b"></span>&nbsp;Kumulatif realisasi + target (garis)</span>
+      <span class="li"><span class="ls" style="background:#16a34a"></span>Realisasi JA/JB (bar)</span>
+      <span class="li"><span class="ls" style="background:#2563eb"></span>Target 2026 (bar)</span>
+      <span class="li"><span class="ls" style="background:#94a3b8"></span>Target 2027+ (bar)</span>
+      <span class="li"><span style="display:inline-block;width:22px;height:3px;background:#16a34a;border-radius:2px;vertical-align:middle"></span>&nbsp;Kum. realisasi</span>
+      <span class="li"><span style="display:inline-block;width:22px;height:2px;border-top:2px dashed #f59e0b;vertical-align:middle"></span>&nbsp;Kum. + target</span>
+    </div>
+  </div>
+  <!-- Dashboard & EWS -->
+  <div class="chart-box">
+    <h3>Timeline Dashboard &amp; EWS (JD &amp; JE)</h3>
+    <p class="desc">FO Fail & I Diff → Dashboard & EWS · bar per bulan + garis kumulatif</p>
+    <div class="chart-wrap" style="height:270px">
+      <canvas id="ch-tl-ews" role="img" aria-label="Timeline dashboard EWS per bulan"></canvas>
+    </div>
+    <div class="leg">
+      <span class="li"><span class="ls" style="background:#16a34a"></span>Realisasi JD/JE (bar)</span>
+      <span class="li"><span class="ls" style="background:#2563eb"></span>Target 2026 (bar)</span>
+      <span class="li"><span class="ls" style="background:#94a3b8"></span>Target 2027+ (bar)</span>
+      <span class="li"><span style="display:inline-block;width:22px;height:3px;background:#16a34a;border-radius:2px;vertical-align:middle"></span>&nbsp;Kum. realisasi</span>
+      <span class="li"><span style="display:inline-block;width:22px;height:2px;border-top:2px dashed #f59e0b;vertical-align:middle"></span>&nbsp;Kum. + target</span>
     </div>
   </div>
 </div>
@@ -475,7 +492,8 @@ function renderAll() {
   renderUptAnnChart(lcd);
   renderUptEwsChart(lcd);
   renderMatrix(lcd);
-  renderTimeline(lcd);
+  renderTimelineAnn(lcd);
+  renderTimelineEws(lcd);
   renderTable(FILT);
 }
 
@@ -611,14 +629,17 @@ function renderMatrix(lcd) {
   }).join('');
 }
 
-// Timeline — bar per bulan + garis kumulatif realisasi & target
-function renderTimeline(lcd) {
-  const real = {}; // bulan realisasi (JD atau JE terisi)
-  const tgt  = {}; // bulan target (JF) yang belum realisasi
+// Timeline generik — bisa dipakai untuk Annunciator maupun Dashboard
+// realKeys : kolom realisasi yang dicek (array, e.g. ['jd','je'] atau ['ja','jb'])
+// tgtKey   : kolom target (e.g. 'jf' atau 'jc')
+function makeTimeline(canvasId, lcd, realKeys, tgtKey, chartKey, title) {
+  const real = {};
+  const tgt  = {};
 
   for (const r of lcd) {
-    const ymReal = parseYM(r.jd) || parseYM(r.je);
-    const ymTgt  = parseYM(r.jf);
+    // Realisasi: salah satu kolom realKeys sudah terisi
+    const ymReal = realKeys.map(k => parseYM(r[k])).find(Boolean);
+    const ymTgt  = parseYM(r[tgtKey]);
     if (ymReal) {
       const k = `${ymReal.yr}-${String(ymReal.mo).padStart(2,'0')}`;
       real[k] = (real[k] || 0) + 1;
@@ -628,148 +649,78 @@ function renderTimeline(lcd) {
     }
   }
 
-  // Semua bulan terurut
   const allKeys = [...new Set([...Object.keys(real), ...Object.keys(tgt)])].sort();
   const labels  = allKeys.map(k => {
     const [y,m] = k.split('-');
     return `${MO_LABEL[+m]} '${y.slice(2)}`;
   });
 
-  // Bar data
-  const dataReal     = allKeys.map(k => real[k] || 0);
-  const dataTgt2026  = allKeys.map(k => (k.startsWith('2026') && !real[k]) ? (tgt[k] || 0) : 0);
-  const dataTgt2027  = allKeys.map(k => (!k.startsWith('2026') && !real[k]) ? (tgt[k] || 0) : 0);
+  const dataReal    = allKeys.map(k => real[k] || 0);
+  const dataTgt2026 = allKeys.map(k => (k.startsWith('2026') && !real[k]) ? (tgt[k]||0) : 0);
+  const dataTgt2027 = allKeys.map(k => (!k.startsWith('2026') && !real[k]) ? (tgt[k]||0) : 0);
 
-  // Kumulatif realisasi saja
-  const cumReal = [];
+  // Kumulatif realisasi
   let acc = 0;
-  for (const k of allKeys) { acc += real[k] || 0; cumReal.push(acc); }
-
-  // Kumulatif realisasi + semua target (proyeksi pencapaian jika semua target terpenuhi)
-  const cumAll = [];
+  const cumReal = allKeys.map(k => { acc += real[k]||0; return acc; });
+  // Kumulatif realisasi + semua target
   acc = 0;
-  for (const k of allKeys) { acc += (real[k] || 0) + (tgt[k] || 0); cumAll.push(acc); }
+  const cumAll  = allKeys.map(k => { acc += (real[k]||0)+(tgt[k]||0); return acc; });
 
-  if (CHARTS.tl) CHARTS.tl.destroy();
-  CHARTS.tl = new Chart($('ch-tl'), {
+  if (CHARTS[chartKey]) CHARTS[chartKey].destroy();
+  CHARTS[chartKey] = new Chart($(canvasId), {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        // ── BAR: per bulan ──
-        {
-          type: 'bar',
-          label: 'Realisasi per bulan',
-          data: dataReal,
-          backgroundColor: '#16a34a',
-          borderRadius: 3,
-          borderSkipped: false,
-          stack: 'monthly',
-          order: 3,
-          yAxisID: 'y'
-        },
-        {
-          type: 'bar',
-          label: 'Target 2026 per bulan',
-          data: dataTgt2026,
-          backgroundColor: '#2563eb',
-          borderRadius: 3,
-          borderSkipped: false,
-          stack: 'monthly',
-          order: 3,
-          yAxisID: 'y'
-        },
-        {
-          type: 'bar',
-          label: 'Target 2027+ per bulan',
-          data: dataTgt2027,
-          backgroundColor: '#94a3b8',
-          borderRadius: 3,
-          borderSkipped: false,
-          stack: 'monthly',
-          order: 3,
-          yAxisID: 'y'
-        },
-        // ── LINE: kumulatif realisasi ──
-        {
-          type: 'line',
-          label: 'Kumulatif realisasi',
-          data: cumReal,
-          borderColor: '#16a34a',
-          backgroundColor: 'rgba(22,163,74,.08)',
-          borderWidth: 2.5,
-          pointRadius: cumReal.map(v => v > 0 ? 4 : 0),
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#16a34a',
-          fill: true,
-          tension: 0.3,
-          order: 1,
-          yAxisID: 'y2'
-        },
-        // ── LINE: kumulatif realisasi + target (proyeksi) ──
-        {
-          type: 'line',
-          label: 'Kumulatif realisasi + target',
-          data: cumAll,
-          borderColor: '#f59e0b',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          borderDash: [6, 4],
-          pointRadius: 3,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#f59e0b',
-          fill: false,
-          tension: 0.3,
-          order: 2,
-          yAxisID: 'y2'
-        }
+        { type:'bar',  label:'Realisasi per bulan',    data:dataReal,    backgroundColor:'#16a34a', borderRadius:3, borderSkipped:false, stack:'m', order:3, yAxisID:'y' },
+        { type:'bar',  label:'Target 2026 per bulan',  data:dataTgt2026, backgroundColor:'#2563eb', borderRadius:3, borderSkipped:false, stack:'m', order:3, yAxisID:'y' },
+        { type:'bar',  label:'Target 2027+ per bulan', data:dataTgt2027, backgroundColor:'#94a3b8', borderRadius:3, borderSkipped:false, stack:'m', order:3, yAxisID:'y' },
+        { type:'line', label:'Kumulatif realisasi',    data:cumReal,
+          borderColor:'#16a34a', backgroundColor:'rgba(22,163,74,.07)', borderWidth:2.5,
+          pointRadius:cumReal.map(v=>v>0?3:0), pointHoverRadius:6, pointBackgroundColor:'#16a34a',
+          fill:true, tension:0.35, order:1, yAxisID:'y2' },
+        { type:'line', label:'Kumulatif realisasi + target', data:cumAll,
+          borderColor:'#f59e0b', backgroundColor:'transparent', borderWidth:2,
+          borderDash:[6,4], pointRadius:3, pointHoverRadius:6, pointBackgroundColor:'#f59e0b',
+          fill:false, tension:0.35, order:2, yAxisID:'y2' },
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
             title: items => `📅 ${items[0].label}`,
             label: ctx => {
-              if (ctx.raw === 0 || ctx.raw === null) return null;
-              const icons = {
-                'Realisasi per bulan':             '🟩',
-                'Target 2026 per bulan':           '🟦',
-                'Target 2027+ per bulan':          '⬜',
-                'Kumulatif realisasi':             '📈',
-                'Kumulatif realisasi + target':    '📊',
-              };
+              if (!ctx.raw) return null;
+              const icons = { 'Realisasi per bulan':'🟩','Target 2026 per bulan':'🟦',
+                'Target 2027+ per bulan':'⬜','Kumulatif realisasi':'📈','Kumulatif realisasi + target':'📊' };
               return `${icons[ctx.dataset.label]||''} ${ctx.dataset.label}: ${ctx.raw} bay`;
             }
           }
         }
       },
-      scales: {
-        x: {
-          stacked: true,
-          ticks: { font: { size: 10 } },
-          grid: { display: false }
-        },
-        y: {
-          stacked: true,
-          position: 'left',
-          ticks: { font: { size: 10 } },
-          grid: { color: 'rgba(0,0,0,.04)' },
-          title: { display: true, text: 'Per bulan (bay)', font: { size: 10 }, color: '#64748b' }
-        },
-        y2: {
-          position: 'right',
-          ticks: { font: { size: 10 } },
-          grid: { drawOnChartArea: false },
-          title: { display: true, text: 'Kumulatif (bay)', font: { size: 10 }, color: '#64748b' }
-        }
+      scales:{
+        x:{ stacked:true, ticks:{ font:{size:9} }, grid:{ display:false } },
+        y:{ stacked:true, position:'left',  ticks:{ font:{size:9} }, grid:{ color:'rgba(0,0,0,.04)' },
+            title:{ display:true, text:'Per bulan (bay)', font:{size:9}, color:'#94a3b8' } },
+        y2:{ position:'right', ticks:{ font:{size:9} }, grid:{ drawOnChartArea:false },
+             title:{ display:true, text:'Kumulatif (bay)', font:{size:9}, color:'#94a3b8' } }
       }
     }
   });
+}
+
+// Timeline Annunciator (JA realisasi, JC target)
+function renderTimelineAnn(lcd) {
+  makeTimeline('ch-tl-ann', lcd, ['ja','jb'], 'jc', 'tlann');
+}
+
+// Timeline Dashboard & EWS (JD/JE realisasi, JF target)
+function renderTimelineEws(lcd) {
+  makeTimeline('ch-tl-ews', lcd, ['jd','je'], 'jf', 'tlews');
 }
 
 // Data table
