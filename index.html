@@ -519,7 +519,43 @@ async function exportWord() {
     const hdrCell=(txt,w)=>new TableCell({children:[new Paragraph({children:[new TextRun({text:txt,color:WHITE,bold:true,size:17})],alignment:AlignmentType.CENTER})],shading:{type:ShadingType.SOLID,color:NAVY,fill:NAVY},width:{size:w||1000,type:WidthType.DXA},margins:{top:55,bottom:55,left:80,right:80}});
     const dataCell=(txt,opts={})=>new TableCell({children:[new Paragraph({children:[new TextRun({text:String(txt||'–'),size:17,color:opts.color||'1f2937',bold:opts.bold||false})],alignment:opts.align||AlignmentType.CENTER})],shading:opts.shading?{type:ShadingType.SOLID,color:opts.shading,fill:opts.shading}:undefined,width:{size:opts.w||1000,type:WidthType.DXA},margins:{top:45,bottom:45,left:80,right:80}});
     const buildTable=(headers,rows,colWidths)=>new Table({width:{size:100,type:WidthType.PERCENTAGE},layout:TableLayoutType.FIXED,rows:[new TableRow({children:headers.map((h,i)=>hdrCell(h,colWidths?.[i])),tableHeader:true}),...rows.map((row,ri)=>new TableRow({children:row.map((cell,ci)=>dataCell(cell,{shading:ri%2===1?LGRAY:undefined,align:ci===0?AlignmentType.LEFT:AlignmentType.CENTER,w:colWidths?.[ci]}))}))]});
-    const chartImg=(imgData,caption,maxW=160)=>{if(!imgData)return[new Paragraph({children:[new TextRun({text:`[Grafik: ${caption}]`,size:16,color:GRAY,italics:true})],spacing:{after:80}})];const ratio=imgData.h/imgData.w,hmm=maxW*ratio;const items=[];try{items.push(new Paragraph({children:[new ImageRun({data:Uint8Array.from(atob(imgData.base64),c=>c.charCodeAt(0)),transformation:{width:Math.round(maxW*36),height:Math.round(hmm*36)},type:'png'})],alignment:AlignmentType.CENTER,spacing:{before:60,after:40}}));}catch(e){items.push(new Paragraph({children:[new TextRun({text:`[Grafik: ${caption}]`,size:16,color:GRAY,italics:true})]}));}items.push(new Paragraph({children:[new TextRun({text:caption,size:16,color:GRAY,italics:true})],alignment:AlignmentType.CENTER,spacing:{after:120}}));return items;};
+    const EMU_PER_MM = 36000;
+    // Lebar konten A4 = 210mm - margin 2x25mm = 160mm
+    const PAGE_CONTENT_W_MM = 160;
+    const PAGE_CONTENT_W_EMU = PAGE_CONTENT_W_MM * EMU_PER_MM;
+
+    // chartImg: masukkan gambar chart ke Word dengan ukuran otomatis sesuai halaman
+    // maxWpct: persentase lebar konten halaman (default 100% = full width)
+    const chartImg = (imgData, caption, maxWpct=100) => {
+      if (!imgData) return [new Paragraph({
+        children:[new TextRun({text:`[Grafik: ${caption}]`,size:16,color:GRAY,italics:true})],
+        spacing:{after:80}
+      })];
+      // Hitung ukuran dalam EMU berdasarkan % lebar konten halaman
+      const targetWemu = Math.round(PAGE_CONTENT_W_EMU * maxWpct / 100);
+      const ratio = imgData.h / imgData.w;
+      const targetHemu = Math.round(targetWemu * ratio);
+      const items = [];
+      try {
+        items.push(new Paragraph({
+          children:[new ImageRun({
+            data: Uint8Array.from(atob(imgData.base64), c => c.charCodeAt(0)),
+            transformation: { width: targetWemu, height: targetHemu },
+            type: 'png',
+          })],
+          alignment: AlignmentType.CENTER,
+          spacing: {before:60, after:40},
+        }));
+      } catch(e) {
+        items.push(new Paragraph({children:[new TextRun({text:`[Grafik: ${caption}]`,size:16,color:GRAY,italics:true})]}));
+      }
+      items.push(new Paragraph({
+        children:[new TextRun({text:caption, size:16, color:GRAY, italics:true})],
+        alignment: AlignmentType.CENTER,
+        spacing: {after:120},
+      }));
+      return items;
+    };
     const phBox=(title,period,color,items)=>[new Paragraph({children:[new TextRun({text:title,bold:true,color:WHITE,size:22}),new TextRun({text:`  —  ${period}`,color:'e0f2fe',size:19})],shading:{type:ShadingType.SOLID,color,fill:color},spacing:{before:160,after:80},indent:{left:cm(0.3)}}),...items.map(i=>blt(i)),new Paragraph({spacing:{before:60,after:0}})];
     const recBox=(title,color,items)=>[new Paragraph({children:[new TextRun({text:`■  ${title}`,bold:true,color:WHITE,size:21})],shading:{type:ShadingType.SOLID,color,fill:color},spacing:{before:160,after:80},indent:{left:cm(0.3)}}),...items.map(i=>blt('→  '+i)),new Paragraph({spacing:{before:60,after:0}})];
 
@@ -545,15 +581,15 @@ async function exportWord() {
     // Hal 2: Distribusi + Status UPT
     children.push(secHdr(1,'Distribusi Jenis Relai'));
     children.push(bodyP(`Total ${BASE.length} bay terfilter. ${lcd.length} bay LCD, ${BASE.filter(r=>r.jenis_n.includes('DISTANCE')).length} bay Distance.`));
-    children.push(...chartImg(imgs.jenis,'Gambar 1 — Distribusi Jenis Relai',80));
+    children.push(...chartImg(imgs.jenis,'Gambar 1 — Distribusi Jenis Relai',45));
     children.push(secHdr(2,'Status Penarikan Indikasi per UPT'));
     const stHdrs=['UPT','Total','JA','JB','JD','JE','Skor4','Ket.'];
     const stBody=upt_data.map(r=>[r.upt,r.tot,`${r.ja}(${r.tot?Math.round(r.ja/r.tot*100):0}%)`,`${r.jb}(${r.tot?Math.round(r.jb/r.tot*100):0}%)`,`${r.jd}(${r.tot?Math.round(r.jd/r.tot*100):0}%)`,`${r.je}(${r.tot?Math.round(r.je/r.tot*100):0}%)`,r.s4,r.s4===r.tot?'Lengkap':r.jd===0?'Belum JD':'Sebagian']);
     stBody.push(['TOTAL',total,`${jaOk}(${total?Math.round(jaOk/total*100):0}%)`,`${jbOk}(${total?Math.round(jbOk/total*100):0}%)`,`${jdOk}(${total?Math.round(jdOk/total*100):0}%)`,`${jeOk}(${total?Math.round(jeOk/total*100):0}%)`,s4,'']);
     children.push(buildTable(stHdrs,stBody,[1400,800,1150,1150,1150,1150,750,1700]));
     children.push(new Paragraph({children:[new TextRun({text:'JA=FO Fail→Ann.  JB=I Diff→Ann.  JD=FO Fail→Dash.  JE=I Diff→Dash.',size:16,color:GRAY})],spacing:{before:60,after:80}}));
-    children.push(...chartImg(imgs.uptAnn,'Gambar 2 — Status Annunciator (JA & JB) per UPT'));
-    children.push(...chartImg(imgs.uptEws,'Gambar 3 — Status Dashboard & EWS (JD & JE) per UPT'));
+    children.push(...chartImg(imgs.uptAnn,'Gambar 2 — Status Annunciator (JA & JB) per UPT',100));
+    children.push(...chartImg(imgs.uptEws,'Gambar 3 — Status Dashboard & EWS (JD & JE) per UPT',100));
     children.push(new Paragraph({pageBreakBefore:true,text:''}));
 
     // Hal 3: Sudah Selesai
@@ -591,8 +627,8 @@ async function exportWord() {
     let cr=0,ca=0; const cumRv=[],cumAv=[];
     for(let i=0;i<tlVals.length;i++){if(tlReal[i])cr+=tlVals[i];ca+=tlVals[i];cumRv.push(cr);cumAv.push(ca);}
     children.push(buildTable(['Bulan','Bay','Status','Kum.Real','Kum.+Target'],tlVals.map((v,i)=>[tlMonths[i],v,tlReal[i]?'REALISASI':i<9?'Target 2026':'Target 2027+',cumRv[i],cumAv[i]]),[1400,600,1800,1800,1800]));
-    children.push(...chartImg(imgs.tlAnn,'Gambar 4 — Timeline Realisasi & Target Annunciator (JA/JB)'));
-    children.push(...chartImg(imgs.tlEws,'Gambar 5 — Timeline Realisasi & Target Dashboard & EWS (JD/JE)'));
+    children.push(...chartImg(imgs.tlAnn,'Gambar 4 — Timeline Realisasi & Target Annunciator (JA/JB)',100));
+    children.push(...chartImg(imgs.tlEws,'Gambar 5 — Timeline Realisasi & Target Dashboard & EWS (JD/JE)',100));
     children.push(h2p('Milestone Kunci'));
     children.push(buildTable(['Periode','Milestone','Detail','Status'],[['Sep 2025','Realisasi pertama','Surabaya Selatan (GIS Waru, GI Rungkut)','SELESAI'],['Des 2025','18 bay 2025 tuntas','Surabaya Selatan selesai','SELESAI'],['Apr 2026','Probolinggo perdana','GI Banyuwangi & Situbondo skor 4','SELESAI'],['Mei 2026','Surabaya Utara mulai','GIS Sawahan, GIS Undaan','SELESAI'],['Jul 2026','Gresik & Malang mulai','GIS Tandes, GI Surabaya Barat','MENDATANG'],['Agu 2026','Puncak-1 (29 bay)','Madiun: Kerek–Tuban, Banaran–Kediri','KRITIKAL'],['Okt 2026','PUNCAK (40 bay)','Semua UPT termasuk Bali','KRITIKAL'],['Des 2026','Sisa 2026','Probolinggo 3 bay','MENDATANG'],['2027','Jangka panjang','Malang, Probolinggo, Bali (8 bay)','JANGKA PANJANG']],[1200,2000,3500,1800]));
     children.push(new Paragraph({pageBreakBefore:true,text:''}));
@@ -603,7 +639,7 @@ async function exportWord() {
     // Hal 7: Roadmap
     children.push(secHdr(7,'Roadmap Pengembangan ke Depan'));
     children.push(bodyP('Roadmap dalam 3 fase mempertimbangkan kondisi existing, kapasitas SDM, dan target keandalan sistem.'));
-    for(const[title,period,color,items]of[['FASE 1 — Penyelesaian Jalur Kritikal 2026','Juli – Oktober 2026',RED,['Selesaikan 93 bay LCD kritikal yang belum JD/JE — prioritas 40 bay target Oktober 2026','Tetapkan segera target JF untuk 16 bay Probolinggo yang belum ada target','Monitoring mingguan progress per UPT via dashboard monit_lcd','Koordinasi intensif vendor untuk konfigurasi JB (I Diff → Annunciator)','Bentuk task force lintas UPT untuk puncak beban Oktober 2026']],['FASE 2 — Penyelesaian Sisa & Non-Kritikal 2026–2027','Nov 2026 – Sep 2027',AMBER,['Selesaikan 8 bay target 2027 (Malang, Probolinggo, Bali)','Mulai program penarikan untuk 336 bay LCD non-kritikal','Integrasi data monitoring ke sistem EWS','Standardisasi prosedur konfigurasi JB untuk semua UPT','Evaluasi dan update roadmap berdasarkan realisasi Fase 1']],['FASE 3 — Optimalisasi & Digitalisasi 2027–2028','2027 – 2028',GREEN,['Implementasi otomasi laporan monitoring berbasis API real-time','Pengembangan alerting otomatis berbasis EWS untuk kondisi FO Fail','Program penggantian 270 bay relai Distance ke LCD untuk ruas kritikal','Integrasi monitoring I Diff Supervisory ke UITJBM','Pengembangan predictive maintenance berbasis data historis']]]){children.push(...phBox(title,period,color,items));}
+    for(const[title,period,color,items]of[['FASE 1 — Penyelesaian Jalur Kritikal 2026','Juli – Oktober 2026',RED,['Selesaikan 93 bay LCD kritikal yang belum JD/JE — prioritas 40 bay target Oktober 2026','Tetapkan segera target JF untuk 16 bay Probolinggo yang belum ada target','Monitoring mingguan progress per UPT via dashboard monit_lcd','Koordinasi intensif vendor untuk konfigurasi JB (I Diff → Annunciator)','Bentuk task force lintas UPT untuk puncak beban Oktober 2026']],['FASE 2 — Penyelesaian Sisa & Non-Kritikal 2026–2027','Nov 2026 – Sep 2027',AMBER,['Selesaikan 8 bay target 2027 (Malang, Probolinggo, Bali)','Mulai program penarikan untuk 336 bay LCD non-kritikal','Integrasi data monitoring ke sistem EWS P2B','Standardisasi prosedur konfigurasi JB untuk semua UPT','Evaluasi dan update roadmap berdasarkan realisasi Fase 1']],['FASE 3 — Optimalisasi & Digitalisasi 2027–2028','2027 – 2028',GREEN,['Implementasi otomasi laporan monitoring berbasis API real-time','Pengembangan alerting otomatis berbasis EWS untuk kondisi FO Fail','Program penggantian 270 bay relai Distance ke LCD untuk ruas kritikal','Integrasi monitoring I Diff Supervisory ke SCADA tingkat wilayah','Pengembangan predictive maintenance berbasis data historis']]]){children.push(...phBox(title,period,color,items));}
     children.push(h2p('Matriks Roadmap per Indikasi'));
     children.push(buildTable(['Indikasi','Kondisi Kini','Target 2026','Target 2027','Catatan'],[['FO Fail → Ann. (JA)',`${jaOk}/${total}(${total?Math.round(jaOk/total*100):0}%)`,'~100%','—','Progress terbaik'],['I Diff → Ann. (JB)',`${jbOk}/${total}(${total?Math.round(jbOk/total*100):0}%)`,'~50%','100%','Bottleneck konfigurasi'],['FO Fail → Dash. (JD)',`${jdOk}/${total}(${total?Math.round(jdOk/total*100):0}%)`,'~80%','100%','Puncak Oktober 2026'],['I Diff → Dash. (JE)',`${jeOk}/${total}(${total?Math.round(jeOk/total*100):0}%)`,'~70%','100%','Paralel dengan JD'],['Semua 4 Indikasi',`${s4}/${total}(${total?Math.round(s4/total*100):0}%)`,'~50 bay','127 bay','Target akhir program']],[2400,1700,1300,1300,2600]));
     children.push(new Paragraph({pageBreakBefore:true,text:''}));
