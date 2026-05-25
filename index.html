@@ -178,8 +178,8 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
 </div>
 
 <div class="grid2">
-  <div class="chart-box"><h3>Status Annunciator per UPT</h3><p class="desc">FO Fail & I Diff → Annunciator (JA & JB) · bay LCD sudah ditarik</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ann"></canvas></div></div>
-  <div class="chart-box"><h3>Status Dashboard &amp; EWS per UPT</h3><p class="desc">FO Fail & I Diff → Dashboard (JD & JE) · bay LCD sudah ditarik</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ews"></canvas></div></div>
+  <div class="chart-box"><h3>Status Annunciator per UPT</h3><p class="desc">FO Fail & I Diff → Annunciator · bay LCD sudah ditarik</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ann"></canvas></div></div>
+  <div class="chart-box"><h3>Status Dashboard &amp; EWS per UPT</h3><p class="desc">FO Fail & I Diff → Dashboard · bay LCD sudah ditarik</p><div class="chart-wrap" style="height:220px"><canvas id="ch-upt-ews"></canvas></div></div>
 </div>
 
 <div class="grid2">
@@ -187,8 +187,8 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
 </div>
 
 <div class="grid2">
-  <div class="chart-box"><h3>Timeline Annunciator (JA &amp; JB)</h3><p class="desc">Realisasi & target · bar per bulan + garis kumulatif</p><div class="chart-wrap" style="height:270px"><canvas id="ch-tl-ann"></canvas></div><div class="leg"><span class="li"><span class="ls" style="background:#16a34a"></span>Realisasi</span><span class="li"><span class="ls" style="background:#2563eb"></span>Target 2026</span><span class="li"><span class="ls" style="background:#94a3b8"></span>Target 2027+</span><span class="li"><span style="display:inline-block;width:22px;height:3px;background:#16a34a;vertical-align:middle;border-radius:2px"></span>&nbsp;Kum. realisasi</span><span class="li"><span style="display:inline-block;width:22px;height:2px;border-top:2px dashed #f59e0b;vertical-align:middle"></span>&nbsp;Kum.+target</span></div></div>
-  <div class="chart-box"><h3>Timeline Dashboard &amp; EWS (JD &amp; JE)</h3><p class="desc">Realisasi & target · bar per bulan + garis kumulatif</p><div class="chart-wrap" style="height:270px"><canvas id="ch-tl-ews"></canvas></div><div class="leg"><span class="li"><span class="ls" style="background:#16a34a"></span>Realisasi</span><span class="li"><span class="ls" style="background:#2563eb"></span>Target 2026</span><span class="li"><span class="ls" style="background:#94a3b8"></span>Target 2027+</span><span class="li"><span style="display:inline-block;width:22px;height:3px;background:#16a34a;vertical-align:middle;border-radius:2px"></span>&nbsp;Kum. realisasi</span><span class="li"><span style="display:inline-block;width:22px;height:2px;border-top:2px dashed #f59e0b;vertical-align:middle"></span>&nbsp;Kum.+target</span></div></div>
+  <div class="chart-box"><h3>Timeline Annunciator (JA &amp; JB)</h3><p class="desc">Realisasi &amp; target per bulan + garis kumulatif</p><div class="chart-wrap" style="height:270px"><canvas id="ch-tl-ann"></canvas></div><div class="leg"><span class="li"><span class="ls" style="background:#16a34a"></span>Realisasi</span><span class="li"><span class="ls" style="background:#2563eb"></span>Target 2026</span><span class="li"><span class="ls" style="background:#94a3b8"></span>Target 2027+</span><span class="li"><span style="display:inline-block;width:22px;height:3px;background:#16a34a;vertical-align:middle;border-radius:2px"></span>&nbsp;Kum. realisasi</span><span class="li"><span style="display:inline-block;width:22px;height:2px;border-top:2px dashed #f59e0b;vertical-align:middle"></span>&nbsp;Kum.+target</span></div></div>
+  <div class="chart-box"><h3>Timeline Dashboard &amp; EWS (JD &amp; JE)</h3><p class="desc">Realisasi &amp; target per bulan + garis kumulatif</p><div class="chart-wrap" style="height:270px"><canvas id="ch-tl-ews"></canvas></div><div class="leg"><span class="li"><span class="ls" style="background:#16a34a"></span>Realisasi</span><span class="li"><span class="ls" style="background:#2563eb"></span>Target 2026</span><span class="li"><span class="ls" style="background:#94a3b8"></span>Target 2027+</span><span class="li"><span style="display:inline-block;width:22px;height:3px;background:#16a34a;vertical-align:middle;border-radius:2px"></span>&nbsp;Kum. realisasi</span><span class="li"><span style="display:inline-block;width:22px;height:2px;border-top:2px dashed #f59e0b;vertical-align:middle"></span>&nbsp;Kum.+target</span></div></div>
 </div>
 
 <div class="sec-title">Detail Data Bay <span style="font-size:11px;font-weight:400;color:var(--muted)">· klik header untuk sort</span></div>
@@ -197,10 +197,10 @@ main{max-width:1320px;margin:0 auto;padding:20px 20px 48px;}
   <th onclick="srt('upt')">UPT ⇅</th><th onclick="srt('ultg')">ULTG ⇅</th>
   <th>Gardu Induk</th><th>Bay</th>
   <th onclick="srt('kritikal')">Kritikal ⇅</th><th onclick="srt('jenis')">Jenis ⇅</th>
-  <th title="FO Fail → Annunciator">FO Fail<br>Ann.</th>
-  <th title="I Diff → Annunciator">I Diff<br>Ann.</th>
-  <th title="FO Fail → Dashboard">FO Fail<br>Dash.</th>
-  <th title="I Diff → Dashboard">I Diff<br>Dash.</th>
+  <th>FO Fail<br>Ann.</th>
+  <th>I Diff<br>Ann.</th>
+  <th>FO Fail<br>Dash.</th>
+  <th>I Diff<br>Dash.</th>
   <th>Target Ann.</th><th>Target Dash.</th>
   <th onclick="srt('skor')">Skor ⇅</th>
 </tr></thead><tbody id="dt-body"></tbody></table>
@@ -266,6 +266,29 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   waitForChart(function() {
+    // Plugin: tampilkan angka di atas setiap bar
+    Chart.register({
+      id: 'barLabels',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        chart.data.datasets.forEach((ds, di) => {
+          const meta = chart.getDatasetMeta(di);
+          if (meta.hidden || ds.type === 'line') return;
+          meta.data.forEach((bar, i) => {
+            const val = ds.data[i];
+            if (!val || val <= 0) return;
+            ctx.save();
+            ctx.font = 'bold 10px Arial';
+            ctx.fillStyle = '#374151';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            const y = bar.y - 2;
+            ctx.fillText(val, bar.x, y);
+            ctx.restore();
+          });
+        });
+      }
+    });
 
 // ── CSV PARSER ──
 function parseCSV(text) {
@@ -343,7 +366,7 @@ function renderCards(lcd) {
 
 function renderProg(lcd) {
   const n=lcd.length||1;
-  const items=[{lbl:'FO Fail → Annunciator (JA)',key:'ja',clr:'#2563eb'},{lbl:'I Diff → Annunciator (JB)',key:'jb',clr:'#dc2626'},{lbl:'FO Fail → Dashboard (JD)',key:'jd',clr:'#16a34a'},{lbl:'I Diff → Dashboard (JE)',key:'je',clr:'#7c3aed'}];
+  const items=[{lbl:'FO Fail → Annunciator',key:'ja',clr:'#2563eb'},{lbl:'I Diff → Annunciator',key:'jb',clr:'#dc2626'},{lbl:'FO Fail → Dashboard',key:'jd',clr:'#16a34a'},{lbl:'I Diff → Dashboard',key:'je',clr:'#7c3aed'}];
   $('prog-list').innerHTML=items.map(it=>{const v=lcd.filter(r=>ok(r[it.key])).length,p=Math.round(v/n*100);return`<div><div class="prog-hd"><span>${it.lbl}</span><span style="color:${it.clr}">${v}/${lcd.length}(${p}%)</span></div><div class="prog-track"><div class="prog-fill" style="width:${p}%;background:${it.clr}"></div></div></div>`;}).join('');
 }
 
@@ -380,8 +403,8 @@ function makeUptChart(canvasId,lcd,keyA,keyB,colorA,colorB,labelA,labelB,chartKe
     }
   }});
 }
-function renderUptAnnChart(lcd){makeUptChart('ch-upt-ann',lcd,'ja','jb','#2563eb','#0891b2','FO Fail Ann. (JA)','I Diff Ann. (JB)','uptann');}
-function renderUptEwsChart(lcd){makeUptChart('ch-upt-ews',lcd,'jd','je','#16a34a','#f59e0b','FO Fail Dash. (JD)','I Diff Dash. (JE)','uptews');}
+function renderUptAnnChart(lcd){makeUptChart('ch-upt-ann',lcd,'ja','jb','#2563eb','#0891b2','FO Fail Annunciator','I Diff Annunciator','uptann');}
+function renderUptEwsChart(lcd){makeUptChart('ch-upt-ews',lcd,'jd','je','#16a34a','#f59e0b','FO Fail Dashboard','I Diff Dashboard','uptews');}
 
 function renderMatrix(lcd) {
   const upts=[...new Set(lcd.map(r=>r.upt_s))].sort();
@@ -409,7 +432,7 @@ function makeTimeline(canvasId,lcd,realKeys,tgtKey,chartKey) {
     {type:'bar',label:'Target 2027+ per bulan',data:dataTgt2027,backgroundColor:'#94a3b8',borderRadius:3,borderSkipped:false,stack:'m',order:3,yAxisID:'y'},
     {type:'line',label:'Kumulatif realisasi',data:cumReal,borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.07)',borderWidth:2.5,pointRadius:cumReal.map(v=>v>0?3:0),pointHoverRadius:6,pointBackgroundColor:'#16a34a',fill:true,tension:0.35,order:1,yAxisID:'y2'},
     {type:'line',label:'Kumulatif realisasi + target',data:cumAll,borderColor:'#f59e0b',backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:3,pointHoverRadius:6,pointBackgroundColor:'#f59e0b',fill:false,tension:0.35,order:2,yAxisID:'y2'},
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>`📅 ${i[0].label}`,label:ctx=>{if(!ctx.raw)return null;const ic={'Realisasi per bulan':'🟩','Target 2026 per bulan':'🟦','Target 2027+ per bulan':'⬜','Kumulatif realisasi':'📈','Kumulatif realisasi + target':'📊'};return`${ic[ctx.dataset.label]||''} ${ctx.dataset.label}: ${ctx.raw} bay`;}}}},scales:{x:{stacked:true,ticks:{font:{size:9}},grid:{display:false}},y:{stacked:true,position:'left',ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,.04)'},title:{display:true,text:'Per bulan (bay)',font:{size:9},color:'#94a3b8'}},y2:{position:'right',ticks:{font:{size:9}},grid:{drawOnChartArea:false},title:{display:true,text:'Kumulatif (bay)',font:{size:9},color:'#94a3b8'}}}}});
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>`📅 ${i[0].label}`,label:ctx=>{if(!ctx.raw)return null;const ic={'Realisasi per bulan':'🟩','Target 2026 per bulan':'🟦','Target 2027+ per bulan':'⬜','Kumulatif realisasi':'📈','Kumulatif + target':'📊'};return`${ic[ctx.dataset.label]||''} ${ctx.dataset.label}: ${ctx.raw} bay`;}}}},scales:{x:{stacked:true,ticks:{font:{size:9}},grid:{display:false}},y:{stacked:true,position:'left',ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,.04)'},title:{display:true,text:'Per bulan (bay)',font:{size:9},color:'#94a3b8'}},y2:{position:'right',ticks:{font:{size:9}},grid:{drawOnChartArea:false},title:{display:true,text:'Kumulatif (bay)',font:{size:9},color:'#94a3b8'}}}}});
 }
 function renderTimelineAnn(lcd){makeTimeline('ch-tl-ann',lcd,['ja','jb'],'jc','tlann');}
 function renderTimelineEws(lcd){makeTimeline('ch-tl-ews',lcd,['jd','je'],'jf','tlews');}
@@ -558,7 +581,7 @@ async function exportWord(withCharts) {
       o[s]={style:BorderStyle.SINGLE,size:4,color:clr}; return o;},{});
     const noBorder = () => ['top','bottom','left','right'].reduce((o,s)=>{
       o[s]={style:BorderStyle.NONE,size:0,color:'FFFFFF'}; return o;},{});
-    const cm2 = {top:60,bottom:60,left:100,right:100};
+    const cm2 = {top:40,bottom:40,left:80,right:80};
     const cm3 = {top:80,bottom:80,left:120,right:120};
 
     const hCell = (txt,w,sz=9) => new TableCell({
@@ -619,7 +642,7 @@ async function exportWord(withCharts) {
             shading:{type:ShadingType.CLEAR,fill},margins:{top:100,bottom:100,left:80,right:120},
             verticalAlign:VerticalAlign.CENTER,
             children:[new Paragraph({alignment:AlignmentType.RIGHT,
-              children:[new TextRun({text:period,size:18,font:'Arial',color:GRAY})]})]}),
+              children:[new TextRun({text:period,size:16,font:'Arial',color:GRAY})]})]}),
         ]})]
       }),
       ...items.map(i=>blt(i)),
@@ -650,15 +673,15 @@ async function exportWord(withCharts) {
         const colW = [cm(5.5), cm(1.2), cm(8.0), cm(1.3)];
         const bg = ['','','',''];
         return new TableRow({children:[
-          dCell(label, colW[0], {align:AlignmentType.LEFT,sz:9}),
-          dCell(val,   colW[1], {bold:true, color:color||BLUE, sz:9}),
+          dCell(label, colW[0], {align:AlignmentType.LEFT,sz:7}),
+          dCell(val,   colW[1], {bold:true, color:color||BLUE, sz:7}),
           new TableCell({width:{size:colW[2],type:WidthType.DXA},borders:border(),margins:cm2,
             children:[new Paragraph({children:[
               new TextRun({text:bar,font:'Courier New',size:14,
                 color:filled>0?(color||BLUE):'CCCCCC'}),
               new TextRun({text:' '+p+'%',font:'Arial',size:16,bold:true,color:color||BLUE}),
             ]})]}),
-          dCell(tot-val, colW[3], {color:GRAY, sz:9}),
+          dCell(tot-val, colW[3], {color:GRAY, sz:7}),
         ]});
       });
       const colW=[cm(5.5),cm(1.2),cm(8.0),cm(1.3)];
@@ -735,17 +758,17 @@ async function exportWord(withCharts) {
         const bg=i%2===0?LGRAY:'FFFFFF';
         const colW=[cm(1.8),cm(0.8),cm(6.5),cm(0.8),cm(1.5),cm(1.5),cm(3.1)];
         return new TableRow({children:[
-          dCell(label,colW[0],{fill:bg,align:AlignmentType.LEFT,sz:8}),
-          dCell(val,colW[1],{fill:bg,bold:true,color:clr,sz:9}),
+          dCell(label,colW[0],{fill:bg,align:AlignmentType.LEFT,sz:7}),
+          dCell(val,colW[1],{fill:bg,bold:true,color:clr,sz:7}),
           new TableCell({width:{size:colW[2],type:WidthType.DXA},borders:border(),
             shading:{type:ShadingType.CLEAR,fill:bg},margins:cm2,
             children:[new Paragraph({children:[
               new TextRun({text:bar,font:'Courier New',size:13,color:clr}),
             ]})]}),
           dCell(isReal?'Realisasi':isTgt26?'Target 2026':'Target 2027+',colW[3]+colW[4],
-            {fill:bg,color:clr,bold:isReal,sz:8,align:AlignmentType.LEFT}),
-          dCell('Kum:'+cr,colW[5],{fill:bg,color:GREEN,sz:8}),
-          dCell('+Tgt:'+ca,colW[6],{fill:bg,color:AMBER,sz:8}),
+            {fill:bg,color:clr,bold:isReal,sz:7,align:AlignmentType.LEFT}),
+          dCell('Kum:'+cr,colW[5],{fill:bg,color:GREEN,sz:7}),
+          dCell('+Tgt:'+ca,colW[6],{fill:bg,color:AMBER,sz:7}),
         ]});
       });
       const colW=[cm(1.8),cm(0.8),cm(6.5),cm(1.4),cm(1.5),cm(1.5),cm(3.1)];
@@ -776,7 +799,7 @@ async function exportWord(withCharts) {
       new Paragraph({spacing:{before:0,after:0},shading:{type:ShadingType.CLEAR,fill:NAVY},
         children:[new TextRun({text:'Relai LCD Jalur Kritikal UITJBM',size:48,bold:true,font:'Arial',color:WHITE})]}),
       new Paragraph({spacing:{before:0,after:240},shading:{type:ShadingType.CLEAR,fill:NAVY},
-        children:[new TextRun({text:'Unit Induk Transmisi Jawa Bali Madura',size:26,font:'Arial',color:'BFDBFE'})]}),
+        children:[new TextRun({text:'Unit Induk Transmisi UITJBM',size:26,font:'Arial',color:'BFDBFE'})]}),
     );
 
     // Filter info
@@ -800,10 +823,10 @@ async function exportWord(withCharts) {
       ].map(([k,v])=>new TableRow({children:[
         new TableCell({width:{size:cm(4),type:WidthType.DXA},borders:noBorder(),
           shading:{type:ShadingType.CLEAR,fill:LGRAY},margins:cm2,
-          children:[new Paragraph({children:[new TextRun({text:k,bold:true,size:18,font:'Arial',color:NAVY})]})]}),
+          children:[new Paragraph({children:[new TextRun({text:k,bold:true,size:16,font:'Arial',color:NAVY})]})]}),
         new TableCell({width:{size:CW-cm(4),type:WidthType.DXA},borders:noBorder(),
           shading:{type:ShadingType.CLEAR,fill:LGRAY},margins:cm2,
-          children:[new Paragraph({children:[new TextRun({text:v,size:18,font:'Arial',color:DKGRAY})]})]}),
+          children:[new Paragraph({children:[new TextRun({text:v,size:16,font:'Arial',color:DKGRAY})]})]}),
       ]}))
     }));
 
@@ -816,7 +839,6 @@ async function exportWord(withCharts) {
         [total,'Bay LCD Kritikal',BLUE,'DBEAFE'],
         [jdOk+'('+p2(jdOk,total)+')','Sudah Realisasi Dashboard',GREEN,'DCFCE7'],
         [(total-jdOk)+'('+p2(total-jdOk,total)+')','Belum Selesai Dashboard',RED,'FEE2E2'],
-        [s4Ok,'Skor Lengkap (4)',AMBER,'FEF3C7'],
       ].map(([val,lbl,clr,bg])=>new TableCell({
         width:{size:kpiW,type:WidthType.DXA},borders:border(clr),
         shading:{type:ShadingType.CLEAR,fill:bg},margins:{top:100,bottom:100,left:80,right:80},
@@ -853,7 +875,7 @@ async function exportWord(withCharts) {
             r.jd===r.tot?GREEN:r.jd>0?AMBER:RED,r.je===r.tot?GREEN:r.je>0?AMBER:RED,
             r.s4>0?GREEN:GRAY,ket==='Lengkap'?GREEN:ket.includes('Belum')?RED:AMBER];
           return new TableRow({children:v.map((vv,j)=>dCell(vv,stCW[j],
-            {fill:bg,color:c[j],bold:j===0,align:j===0||j===7?AlignmentType.LEFT:AlignmentType.CENTER,sz:8}))});
+            {fill:bg,color:c[j],bold:j===0,align:j===0||j===7?AlignmentType.LEFT:AlignmentType.CENTER,sz:7}))});
         }),
         new TableRow({children:[
           hCell('TOTAL',stCW[0],8),hCell(total,stCW[1],8),
@@ -902,18 +924,13 @@ async function exportWord(withCharts) {
           const v=[r.upt,r.tot-r.ja,r.tot-r.jb,r.tot-r.jd,r.tot-r.je,btgt,p];
           const c=[NAVY,DKGRAY,DKGRAY,DKGRAY,DKGRAY,btgt==='0'?GREEN:RED,prioClr[p]];
           return new TableRow({children:v.map((vv,j)=>dCell(vv,blCW[j],
-            {fill:bg,color:c[j],bold:j===0||j===6,align:j===0?AlignmentType.LEFT:AlignmentType.CENTER,sz:8}))});
+            {fill:bg,color:c[j],bold:j===0||j===6,align:j===0?AlignmentType.LEFT:AlignmentType.CENTER,sz:7}))});
         }),
       ]
     }));
     children.push(spacer());
 
-    children.push(subHdr('Temuan Kritis'));
-    const pKritis=[
-      `I Diff Annunciator hanya ${p2(jbOk,total)} — bottleneck terbesar, konfigurasi khusus per vendor.`,
-    ];
-    // Tambah 16 bay Probolinggo hanya jika ada
-    const proboData = upt_data.find(r=>r.upt==='PROBOLINGGO');
+    children.push(subHdr('Temuan Kritis''PROBOLINGGO');
     const belumTgt = krit.filter(r=>r.upt_s==='PROBOLINGGO'&&!parseYM(r.jf)&&!ok(r.jd)).length;
     if(belumTgt>0) pKritis.push(`${belumTgt} bay Probolinggo tanpa target — jalur 500 kV kritis (GISTET Paiton–Grati, GITET Grati–Krian).`);
     const bali=upt_data.find(r=>r.upt==='BALI');
@@ -949,10 +966,10 @@ async function exportWord(withCharts) {
           const clr=isReal?GREEN:isCrit?RED:BLUE;
           const bg=i%2===0?LGRAY:'FFFFFF';
           return new TableRow({children:[
-            dCell(label,tgtColW[0],{fill:bg,align:AlignmentType.LEFT,bold:true,color:NAVY,sz:9}),
-            dCell(v.tot,tgtColW[1],{fill:bg,bold:true,color:clr,sz:9}),
-            dCell([...v.upts].join(', '),tgtColW[2],{fill:bg,align:AlignmentType.LEFT,sz:8}),
-            dCell(sts,tgtColW[3],{fill:bg,color:clr,bold:isReal||isCrit,sz:9}),
+            dCell(label,tgtColW[0],{fill:bg,align:AlignmentType.LEFT,bold:true,color:NAVY,sz:7}),
+            dCell(v.tot,tgtColW[1],{fill:bg,bold:true,color:clr,sz:7}),
+            dCell([...v.upts].join(', '),tgtColW[2],{fill:bg,align:AlignmentType.LEFT,sz:7}),
+            dCell(sts,tgtColW[3],{fill:bg,color:clr,bold:isReal||isCrit,sz:7}),
           ]});
         }),
         // Belum ada target
@@ -960,10 +977,10 @@ async function exportWord(withCharts) {
           if(!noTgt.length) return null;
           const uS=[...new Set(noTgt.map(r=>r.upt_s))].join(', ');
           return new TableRow({children:[
-            dCell('Belum Ada Target',tgtColW[0],{fill:'FEE2E2',bold:true,color:RED,align:AlignmentType.LEFT,sz:9}),
-            dCell(noTgt.length,tgtColW[1],{fill:'FEE2E2',bold:true,color:RED,sz:9}),
-            dCell(uS,tgtColW[2],{fill:'FEE2E2',align:AlignmentType.LEFT,sz:8}),
-            dCell('PERLU DITETAPKAN',tgtColW[3],{fill:'FEE2E2',bold:true,color:RED,sz:9}),
+            dCell('Belum Ada Target',tgtColW[0],{fill:'FEE2E2',bold:true,color:RED,align:AlignmentType.LEFT,sz:7}),
+            dCell(noTgt.length,tgtColW[1],{fill:'FEE2E2',bold:true,color:RED,sz:7}),
+            dCell(uS,tgtColW[2],{fill:'FEE2E2',align:AlignmentType.LEFT,sz:7}),
+            dCell('PERLU DITETAPKAN',tgtColW[3],{fill:'FEE2E2',bold:true,color:RED,sz:7}),
           ]});
         })(),
       ].filter(Boolean)
@@ -995,10 +1012,10 @@ async function exportWord(withCharts) {
       rows:[
         new TableRow({children:['Periode','Milestone','Detail','Status'].map((h,i)=>hCell(h,msColW[i]))}),
         ...staticMs.map(([per,ms,det,sts,clr],i)=>new TableRow({children:[
-          dCell(per,msColW[0],{fill:i%2===0?LGRAY:'FFFFFF',bold:true,color:NAVY,align:AlignmentType.LEFT,sz:8}),
-          dCell(ms,msColW[1],{fill:i%2===0?LGRAY:'FFFFFF',align:AlignmentType.LEFT,sz:8}),
-          dCell(det,msColW[2],{fill:i%2===0?LGRAY:'FFFFFF',align:AlignmentType.LEFT,sz:8}),
-          dCell(sts,msColW[3],{fill:i%2===0?LGRAY:'FFFFFF',color:clr,bold:true,sz:8}),
+          dCell(per,msColW[0],{fill:i%2===0?LGRAY:'FFFFFF',bold:true,color:NAVY,align:AlignmentType.LEFT,sz:7}),
+          dCell(ms,msColW[1],{fill:i%2===0?LGRAY:'FFFFFF',align:AlignmentType.LEFT,sz:7}),
+          dCell(det,msColW[2],{fill:i%2===0?LGRAY:'FFFFFF',align:AlignmentType.LEFT,sz:7}),
+          dCell(sts,msColW[3],{fill:i%2===0?LGRAY:'FFFFFF',color:clr,bold:true,sz:7}),
         ]})),
       ]
     }));
@@ -1015,7 +1032,7 @@ async function exportWord(withCharts) {
       'Selesaikan bay LCD kritikal yang belum FO Fail Dashboard — prioritas bulan puncak',
       'Tetapkan segera target untuk bay yang belum ada target penyelesaian',
       'Monitoring mingguan progress per UPT via dashboard monit_lcd',
-      'Koordinasi intensif vendor untuk konfigurasi I Diff Annunciator',
+      '',
       'Bentuk task force lintas UPT untuk puncak beban',
     ]));
     children.push(...phaseBox('FASE 2 — Penyelesaian Sisa & Non-Kritikal 2026–2027','Nov 2026 – Sep 2027','FEF3C7',AMBER,[
@@ -1042,7 +1059,7 @@ async function exportWord(withCharts) {
              ['Semua 4 Indikasi',     `${s4Ok}/${total}(${p2(s4Ok,total)})`,'~50 bay','127 bay','Target akhir program'],
         ].map(([ind,kini,t26,t27,cat],i)=>new TableRow({children:[ind,kini,t26,t27,cat].map((v,j)=>
           dCell(v,rmCW[j],{fill:i%2===0?LGRAY:'FFFFFF',
-            align:j===0||j===4?AlignmentType.LEFT:AlignmentType.CENTER,sz:9}))})),
+            align:j===0||j===4?AlignmentType.LEFT:AlignmentType.CENTER,sz:7}))})),
       ]
     }));
 
@@ -1073,7 +1090,7 @@ async function exportWord(withCharts) {
       border:{bottom:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:2}},
       children:[new TextRun({text:'Kesimpulan',size:26,bold:true,font:'Arial',color:NAVY})]
     }));
-    children.push(bodyP(`Program penarikan indikasi FO Fail dan I Diff untuk ${total} bay LCD jalur kritikal UITJBM (filter: ${filterDesc}) menunjukkan progres tidak merata antar UPT. Keberhasilan program ini akan langsung meningkatkan keandalan sistem proteksi pada jaringan transmisi 150 kV dan 500 kV Jawa Bali Madura.`));
+    children.push(bodyP(`Program penarikan indikasi FO Fail dan I Diff untuk ${total} bay LCD jalur kritikal UITJBM (filter: ${filterDesc}) menunjukkan progres tidak merata antar UPT. Keberhasilan program ini akan langsung meningkatkan keandalan sistem proteksi pada jaringan transmisi 150 kV dan 500 kV UITJBM.`));
     children.push(spacer());
 
     // Tanda tangan
@@ -1083,11 +1100,11 @@ async function exportWord(withCharts) {
         new TableRow({children:['Disiapkan oleh:','Mengetahui:','Tanggal:'].map(h=>new TableCell({
           width:{size:ttW,type:WidthType.DXA},borders:border(),
           shading:{type:ShadingType.CLEAR,fill:LGRAY},margins:cm3,
-          children:[new Paragraph({children:[new TextRun({text:h,size:18,bold:true,font:'Arial',color:NAVY})]})]}))
+          children:[new Paragraph({children:[new TextRun({text:h,size:16,bold:true,font:'Arial',color:NAVY})]})]}))
         }),
         new TableRow({children:['\n\n\n\n…………………………………','\n\n\n\n…………………………………','\n\n\n\n'+TODAY].map(v=>new TableCell({
           width:{size:ttW,type:WidthType.DXA},borders:border(),margins:cm3,
-          children:[new Paragraph({children:[new TextRun({text:v,size:18,font:'Arial',color:NAVY})]})]}))
+          children:[new Paragraph({children:[new TextRun({text:v,size:16,font:'Arial',color:NAVY})]})]}))
         }),
       ]
     }));
