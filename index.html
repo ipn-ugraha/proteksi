@@ -245,22 +245,39 @@ function ok(v){ return v && v.trim() !== '' && v.trim() !== '-'; }
 function parseYM(v) {
   if (!v) return null;
   const s = v.toUpperCase().trim();
-  // Google Sheets CSV export: M/D/YYYY (US format) — bulan di grup 1
-  const dm = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (dm) {
-    const m1=parseInt(dm[1]), m2=parseInt(dm[2]), yr=parseInt(dm[3]);
-    // M/D/YYYY: bulan=dm[1] jika dm[1]<=12 dan dm[2]>12
-    // D/M/YYYY: bulan=dm[2] jika dm[2]<=12 dan dm[1]>12
-    // Jika keduanya <=12: Google Sheets = M/D/YYYY → bulan=dm[1]
+
+  // Format 1: D-NamaBulan-YYYY atau D-NamaBulan-YY  misal "1-Mei-2026", "17-Nov-2025"
+  const dm1 = s.match(/^(\d{1,2})[-\/]([A-Z]+)[-\/](\d{2,4})$/);
+  if (dm1) {
+    const mo = BLN[dm1[2]] || Object.entries(BLN).find(([k])=>k.startsWith(dm1[2].slice(0,3)))?.[1];
+    const yr = dm1[3].length===2 ? 2000+parseInt(dm1[3]) : parseInt(dm1[3]);
+    if (mo && yr) return {yr, mo, label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`};
+  }
+
+  // Format 2: NamaBulan-D-YYYY atau NamaBulan YYYY  misal "Mei-1-2026", "Oktober 2026"
+  const dm2 = s.match(/^([A-Z]+)[-\s](\d{1,2})[-\s](\d{4})$/);
+  if (dm2) {
+    const mo = BLN[dm2[1]] || Object.entries(BLN).find(([k])=>k.startsWith(dm2[1].slice(0,3)))?.[1];
+    const yr = parseInt(dm2[3]);
+    if (mo && yr) return {yr, mo, label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`};
+  }
+
+  // Format 3: M/D/YYYY atau D/M/YYYY (Google Sheets US export)
+  const dm3 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dm3) {
+    const m1=parseInt(dm3[1]), m2=parseInt(dm3[2]), yr=parseInt(dm3[3]);
     let mo;
-    if (m1 > 12) mo = m2;        // pasti D/M/YYYY
+    if (m1 > 12)      mo = m2;   // pasti D/M/YYYY
     else if (m2 > 12) mo = m1;   // pasti M/D/YYYY
-    else mo = m1;                 // ambiguous → Google Sheets = M/D/YYYY
+    else               mo = m1;  // ambiguous → Google Sheets = M/D/YYYY
     if (mo>=1&&mo<=12) return {yr, mo, label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`};
   }
-  // Format teks: "SEPTEMBER 2026", "SEP 2026", dll
+
+  // Format 4: NamaBulan YYYY saja  misal "SEPTEMBER 2026", "OKT 2026"
   let mo=null, yr=null;
   for(const[k,mv] of Object.entries(BLN)){if(s.includes(k)){mo=mv;break;}}
+  // Coba juga pencocokan 3 huruf pertama
+  if (!mo) for(const[k,mv] of Object.entries(BLN)){if(s.startsWith(k.slice(0,3))){mo=mv;break;}}
   for(const y of['2024','2025','2026','2027','2028']){if(s.includes(y)){yr=parseInt(y);break;}}
   return (mo&&yr)?{yr,mo,label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`}:null;
 }
@@ -425,17 +442,6 @@ function renderMatrix(lcd) {
 
 function makeTimeline(canvasId,lcd,realKeys,tgtKey,chartKey) {
   const real={},tgt={};
-  // DEBUG: log sample data
-  console.log('[TL] chartKey='+chartKey+' lcd='+lcd.length+' realKeys='+JSON.stringify(realKeys)+' tgtKey='+tgtKey);
-  if(lcd.length>0){
-    const s=lcd[0];
-    console.log('[TL] sample row:',JSON.stringify({ja:s.ja,jb:s.jb,jc:s.jc,jd:s.jd,je:s.je,jf:s.jf}));
-  }
-  // Log semua nilai unik di realKeys
-  const uniqVals={}; realKeys.forEach(k=>{uniqVals[k]=[...new Set(lcd.map(r=>r[k]).filter(Boolean))].slice(0,5);});
-  console.log('[TL] sample vals:', JSON.stringify(uniqVals));
-  console.log('[TL] tgtKey vals:', [...new Set(lcd.map(r=>r[tgtKey]).filter(Boolean))].slice(0,5));
-
   for(const r of lcd){
     const isReal = realKeys.some(k => ok(r[k]));
     const ymR = isReal
@@ -451,7 +457,6 @@ function makeTimeline(canvasId,lcd,realKeys,tgtKey,chartKey) {
       tgt[k]=(tgt[k]||0)+1;
     }
   }
-  console.log('[TL] real='+JSON.stringify(real)+' tgt='+JSON.stringify(tgt));
   // Sort kronologis (YYYY-MM sudah aman untuk string sort)
   const allKeys=[...new Set([...Object.keys(real),...Object.keys(tgt)])].sort();
   const labels=allKeys.map(k=>{const[y,m]=k.split('-');return`${MO_LABEL[+m]} '${y.slice(2)}`;});
