@@ -425,11 +425,19 @@ function renderMatrix(lcd) {
 
 function makeTimeline(canvasId,lcd,realKeys,tgtKey,chartKey) {
   const real={},tgt={};
+  // DEBUG: log sample data
+  console.log('[TL] chartKey='+chartKey+' lcd='+lcd.length+' realKeys='+JSON.stringify(realKeys)+' tgtKey='+tgtKey);
+  if(lcd.length>0){
+    const s=lcd[0];
+    console.log('[TL] sample row:',JSON.stringify({ja:s.ja,jb:s.jb,jc:s.jc,jd:s.jd,je:s.je,jf:s.jf}));
+  }
+  // Log semua nilai unik di realKeys
+  const uniqVals={}; realKeys.forEach(k=>{uniqVals[k]=[...new Set(lcd.map(r=>r[k]).filter(Boolean))].slice(0,5);});
+  console.log('[TL] sample vals:', JSON.stringify(uniqVals));
+  console.log('[TL] tgtKey vals:', [...new Set(lcd.map(r=>r[tgtKey]).filter(Boolean))].slice(0,5));
+
   for(const r of lcd){
-    // Cek apakah sudah terealisasi (ok = tidak kosong, bukan '-')
     const isReal = realKeys.some(k => ok(r[k]));
-    // Ambil tanggal: coba parse dari kolom realisasi dulu,
-    // jika isinya bukan tanggal (misal 'YA','V') → coba kolom target sebagai acuan
     const ymR = isReal
       ? (realKeys.map(k=>parseYM(r[k])).find(Boolean) || parseYM(r[tgtKey]))
       : null;
@@ -443,6 +451,7 @@ function makeTimeline(canvasId,lcd,realKeys,tgtKey,chartKey) {
       tgt[k]=(tgt[k]||0)+1;
     }
   }
+  console.log('[TL] real='+JSON.stringify(real)+' tgt='+JSON.stringify(tgt));
   // Sort kronologis (YYYY-MM sudah aman untuk string sort)
   const allKeys=[...new Set([...Object.keys(real),...Object.keys(tgt)])].sort();
   const labels=allKeys.map(k=>{const[y,m]=k.split('-');return`${MO_LABEL[+m]} '${y.slice(2)}`;});
