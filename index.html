@@ -426,9 +426,22 @@ function renderMatrix(lcd) {
 function makeTimeline(canvasId,lcd,realKeys,tgtKey,chartKey) {
   const real={},tgt={};
   for(const r of lcd){
-    const ymR=realKeys.map(k=>parseYM(r[k])).find(Boolean),ymT=parseYM(r[tgtKey]);
-    if(ymR){const k=`${ymR.yr}-${String(ymR.mo).padStart(2,'0')}`;real[k]=(real[k]||0)+1;}
-    else if(ymT){const k=`${ymT.yr}-${String(ymT.mo).padStart(2,'0')}`;tgt[k]=(tgt[k]||0)+1;}
+    // Cek apakah sudah terealisasi (ok = tidak kosong, bukan '-')
+    const isReal = realKeys.some(k => ok(r[k]));
+    // Ambil tanggal: coba parse dari kolom realisasi dulu,
+    // jika isinya bukan tanggal (misal 'YA','V') → coba kolom target sebagai acuan
+    const ymR = isReal
+      ? (realKeys.map(k=>parseYM(r[k])).find(Boolean) || parseYM(r[tgtKey]))
+      : null;
+    const ymT = !isReal ? parseYM(r[tgtKey]) : null;
+
+    if(ymR){
+      const k=`${ymR.yr}-${String(ymR.mo).padStart(2,'0')}`;
+      real[k]=(real[k]||0)+1;
+    } else if(ymT){
+      const k=`${ymT.yr}-${String(ymT.mo).padStart(2,'0')}`;
+      tgt[k]=(tgt[k]||0)+1;
+    }
   }
   // Sort kronologis (YYYY-MM sudah aman untuk string sort)
   const allKeys=[...new Set([...Object.keys(real),...Object.keys(tgt)])].sort();
