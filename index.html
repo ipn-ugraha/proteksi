@@ -245,10 +245,22 @@ function ok(v){ return v && v.trim() !== '' && v.trim() !== '-'; }
 function parseYM(v) {
   if (!v) return null;
   const s = v.toUpperCase().trim();
+  // Google Sheets CSV export: M/D/YYYY (US format) — bulan di grup 1
   const dm = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (dm) { const mo=parseInt(dm[2]),yr=parseInt(dm[3]); if(mo>=1&&mo<=12) return {yr,mo,label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`}; }
-  let mo=null,yr=null;
-  for(const[k,mv]of Object.entries(BLN)){if(s.includes(k)){mo=mv;break;}}
+  if (dm) {
+    const m1=parseInt(dm[1]), m2=parseInt(dm[2]), yr=parseInt(dm[3]);
+    // M/D/YYYY: bulan=dm[1] jika dm[1]<=12 dan dm[2]>12
+    // D/M/YYYY: bulan=dm[2] jika dm[2]<=12 dan dm[1]>12
+    // Jika keduanya <=12: Google Sheets = M/D/YYYY → bulan=dm[1]
+    let mo;
+    if (m1 > 12) mo = m2;        // pasti D/M/YYYY
+    else if (m2 > 12) mo = m1;   // pasti M/D/YYYY
+    else mo = m1;                 // ambiguous → Google Sheets = M/D/YYYY
+    if (mo>=1&&mo<=12) return {yr, mo, label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`};
+  }
+  // Format teks: "SEPTEMBER 2026", "SEP 2026", dll
+  let mo=null, yr=null;
+  for(const[k,mv] of Object.entries(BLN)){if(s.includes(k)){mo=mv;break;}}
   for(const y of['2024','2025','2026','2027','2028']){if(s.includes(y)){yr=parseInt(y);break;}}
   return (mo&&yr)?{yr,mo,label:`${MO_LABEL[mo]} '${String(yr).slice(2)}`}:null;
 }
