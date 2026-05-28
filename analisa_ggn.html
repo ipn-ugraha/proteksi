@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relay Analyzer Ultimate - Synchronized Analysis</title>
+    <title>Relay Analyzer Pro - Complete Analysis</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,7 +13,7 @@
             min-height: 100vh;
             padding: 15px;
         }
-        .container { max-width: 3200px; margin: 0 auto; }
+        .container { max-width: 3600px; margin: 0 auto; }
         
         .header {
             background: white;
@@ -48,7 +48,7 @@
         .drop-zone.dragover { background: #e8eef7; border-color: #764ba2; box-shadow: 0 0 10px rgba(102, 126, 234, 0.3); }
         
         .file-input { display: none; }
-        .btn-browse { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap; }
+        .btn-browse { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
         .btn-browse:hover { background: #764ba2; }
         
         .controls-section {
@@ -63,32 +63,10 @@
         
         .controls-section.show { display: flex; }
         
-        .control-group {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        
-        .control-label {
-            font-weight: 600;
-            font-size: 11px;
-            color: #333;
-        }
-        
-        .control-select, .control-btn {
-            padding: 6px 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 10px;
-            cursor: pointer;
-            background: white;
-        }
-        
-        .control-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
+        .control-group { display: flex; gap: 8px; align-items: center; }
+        .control-label { font-weight: 600; font-size: 11px; color: #333; }
+        .control-btn { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; cursor: pointer; background: white; }
+        .control-btn.active { background: #667eea; color: white; border-color: #667eea; }
         
         .loading-overlay {
             position: fixed;
@@ -131,32 +109,6 @@
         .file-info { background: white; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 11px; color: #666; display: none; }
         .file-info.active { display: block; }
         
-        .tabs {
-            background: white;
-            padding: 0 15px;
-            border-bottom: 1px solid #e0e0e0;
-            display: none;
-            gap: 0;
-            overflow-x: auto;
-        }
-        
-        .tabs.show { display: flex; }
-        
-        .tab-btn {
-            padding: 12px 15px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            white-space: nowrap;
-        }
-        
-        .tab-btn:hover { color: #667eea; }
-        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
-        
         .content {
             display: grid;
             grid-template-columns: 1fr 320px;
@@ -170,7 +122,7 @@
         
         .content.show { display: grid; }
         
-        .main { padding: 15px; overflow-y: auto; max-height: 800px; }
+        .main { padding: 15px; overflow-y: auto; max-height: 900px; }
         
         .chart-section {
             background: #f8f9fa;
@@ -190,30 +142,13 @@
             align-items: center;
         }
         
-        .chart-controls {
-            display: flex;
-            gap: 4px;
-        }
-        
-        .chart-btn {
-            padding: 3px 6px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            background: white;
-            cursor: pointer;
-            font-size: 9px;
-            font-weight: 500;
-        }
-        
-        .chart-btn:hover {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
+        .chart-controls { display: flex; gap: 4px; }
+        .chart-btn { padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; font-size: 9px; }
+        .chart-btn:hover { background: #667eea; color: white; border-color: #667eea; }
         
         .chart-box {
             position: relative;
-            height: 250px;
+            height: 220px;
             width: 100%;
         }
         
@@ -236,12 +171,7 @@
             margin-bottom: 12px;
         }
         
-        .time-slider-label {
-            font-weight: 600;
-            font-size: 10px;
-            color: #333;
-            margin-bottom: 6px;
-        }
+        .time-slider-label { font-weight: 600; font-size: 10px; color: #333; margin-bottom: 6px; }
         
         .time-slider {
             width: 100%;
@@ -275,22 +205,58 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
-        .time-display {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 9px;
-        }
-        
-        .time-box {
-            background: #f8f9fa;
-            padding: 6px;
-            border-radius: 4px;
-            border-left: 2px solid #667eea;
-        }
-        
+        .time-display { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 9px; }
+        .time-box { background: #f8f9fa; padding: 6px; border-radius: 4px; border-left: 2px solid #667eea; }
         .time-label { color: #999; font-size: 8px; margin-bottom: 2px; }
         .time-value { font-weight: 600; color: #667eea; font-family: monospace; font-size: 9px; }
+        
+        .phasor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .phasor-box {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            height: 220px;
+        }
+        
+        .phasor-title { font-weight: 600; font-size: 10px; color: #333; margin-bottom: 6px; }
+        
+        .digital-selector {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .digital-label { font-weight: 600; font-size: 10px; color: #333; margin-bottom: 6px; }
+        
+        .digital-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+        
+        .digital-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 3px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 8px;
+        }
+        
+        .digital-checkbox input { cursor: pointer; }
+        .digital-checkbox:hover { background: #e8eef7; }
+        .digital-checkbox input:checked ~ label { color: #667eea; font-weight: 600; }
         
         .sidebar {
             background: #f8f9fa;
@@ -298,9 +264,6 @@
             border-left: 1px solid #e0e0e0;
             overflow-y: auto;
         }
-        
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
         
         .conclusion-box {
             background: linear-gradient(135deg, #e8eef7 0%, #f0e6ff 100%);
@@ -310,12 +273,7 @@
             margin-bottom: 12px;
         }
         
-        .conclusion-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 6px;
-        }
+        .conclusion-title { font-size: 15px; font-weight: 700; color: #667eea; margin-bottom: 6px; }
         
         .conclusion-detail {
             background: white;
@@ -368,21 +326,6 @@
         .fault-rank { font-weight: 600; color: #667eea; min-width: 20px; }
         .fault-name { flex: 1; color: #333; }
         .fault-score { color: #666; min-width: 35px; text-align: right; }
-        
-        .phasor-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        
-        .phasor-box {
-            position: relative;
-            height: 250px;
-            width: 100%;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #e0e0e0;
-        }
     </style>
 </head>
 <body>
@@ -396,8 +339,8 @@
 
     <div class="container">
         <div class="header">
-            <h1>⚡ Relay Analyzer Ultimate - Synchronized Time-Domain Analysis</h1>
-            <p>Synchronized X-Axis (V/I/Digital) | Integrated Phasor | Time Cursor | Enhanced 2-Phase Detection</p>
+            <h1>⚡ Relay Analyzer Pro - Enhanced Fingerprint Analysis</h1>
+            <p>Synchronized Waveforms | Integrated Phasor View | Multi-Signal Digital | Improved Fault Detection</p>
         </div>
         
         <div class="upload-section">
@@ -422,110 +365,88 @@
             </div>
             <div class="control-group">
                 <span class="control-label">CT:</span>
-                <input type="text" id="ctRatio" class="control-select" value="1000/5" style="width: 70px;">
+                <input type="text" id="ctRatio" class="control-select" value="1000/5" style="width: 70px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px;">
             </div>
             <div class="control-group">
                 <span class="control-label">PT:</span>
-                <input type="text" id="ptRatio" class="control-select" value="275000/110" style="width: 70px;">
+                <input type="text" id="ptRatio" class="control-select" value="275000/110" style="width: 70px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px;">
             </div>
-        </div>
-        
-        <div class="tabs" id="tabsContainer">
-            <button class="tab-btn active" onclick="switchTab('analysis')">📊 Synchronized Analysis</button>
-            <button class="tab-btn" onclick="switchTab('phasor')">📍 Phasor View</button>
         </div>
         
         <div class="content" id="content">
-            <!-- ANALYSIS TAB -->
-            <div id="analysis" class="tab-content active">
-                <div class="main">
-                    <!-- CONCLUSION BOX -->
-                    <div class="conclusion-box" id="conclusion"></div>
-                    
-                    <!-- TIME SLIDER -->
-                    <div class="time-slider-container">
-                        <div class="time-slider-label">⏱️ Time Cursor (Synchronized X-Axis)</div>
-                        <input type="range" id="timeSlider" class="time-slider" min="0" max="10000" value="0" oninput="updateSyncedCharts()">
-                        <div class="time-display">
-                            <div class="time-box">
-                                <div class="time-label">Current Time</div>
-                                <div class="time-value" id="timeCurrentDisplay">0.00s</div>
-                            </div>
-                            <div class="time-box">
-                                <div class="time-label">Window Width</div>
-                                <div class="time-value" id="timeWindowDisplay">0.00s</div>
-                            </div>
+            <div class="main">
+                <!-- CONCLUSION BOX -->
+                <div class="conclusion-box" id="conclusion"></div>
+                
+                <!-- TIME SLIDER -->
+                <div class="time-slider-container">
+                    <div class="time-slider-label">⏱️ Time Cursor (Synchronized)</div>
+                    <input type="range" id="timeSlider" class="time-slider" min="0" max="10000" value="0" oninput="updateAnalysis()">
+                    <div class="time-display">
+                        <div class="time-box">
+                            <div class="time-label">Current Time</div>
+                            <div class="time-value" id="timeCurrentDisplay">0.00s</div>
                         </div>
-                    </div>
-                    
-                    <!-- VOLTAGE CHART -->
-                    <div class="chart-section">
-                        <div class="section-title">
-                            <span id="voltageTitle">⚡ Voltage (Secondary)</span>
-                            <div class="chart-controls">
-                                <button class="chart-btn" onclick="zoomIn()">+ Zoom</button>
-                                <button class="chart-btn" onclick="zoomOut()">- Zoom</button>
-                            </div>
-                        </div>
-                        <div class="chart-box" style="position: relative;">
-                            <div class="time-marker" id="voltageMarker"></div>
-                            <canvas id="voltageChart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- CURRENT CHART -->
-                    <div class="chart-section">
-                        <div class="section-title">
-                            <span id="currentTitle">📈 Current (Secondary)</span>
-                            <div class="chart-controls">
-                                <button class="chart-btn" onclick="zoomIn()">+ Zoom</button>
-                                <button class="chart-btn" onclick="zoomOut()">- Zoom</button>
-                            </div>
-                        </div>
-                        <div class="chart-box" style="position: relative;">
-                            <div class="time-marker" id="currentMarker"></div>
-                            <canvas id="currentChart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- DIGITAL CHART -->
-                    <div class="chart-section">
-                        <div class="section-title">
-                            <span>🔌 Digital Signals (Aligned X-Axis)</span>
-                        </div>
-                        <div class="chart-box" style="position: relative;">
-                            <div class="time-marker" id="digitalMarker"></div>
-                            <canvas id="digitalChart"></canvas>
+                        <div class="time-box">
+                            <div class="time-label">Window Width</div>
+                            <div class="time-value" id="timeWindowDisplay">0.00s</div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- PHASOR TAB -->
-            <div id="phasor" class="tab-content">
-                <div class="main">
-                    <!-- TIME SLIDER FOR PHASOR -->
-                    <div class="time-slider-container">
-                        <div class="time-slider-label">⏱️ Time Cursor for Phasor</div>
-                        <input type="range" id="timePhasorSlider" class="time-slider" min="0" max="10000" value="0" oninput="updatePhasorsSync()">
-                        <div class="time-display">
-                            <div class="time-box">
-                                <div class="time-label">Current Time</div>
-                                <div class="time-value" id="timePhasorDisplay">0.00s</div>
-                            </div>
+                
+                <!-- VOLTAGE CHART -->
+                <div class="chart-section">
+                    <div class="section-title">
+                        <span id="voltageTitle">⚡ Voltage (Secondary)</span>
+                        <div class="chart-controls">
+                            <button class="chart-btn" onclick="zoomIn()">+ Zoom</button>
+                            <button class="chart-btn" onclick="zoomOut()">- Zoom</button>
                         </div>
                     </div>
-                    
-                    <div class="phasor-grid">
-                        <div class="chart-section">
-                            <div class="section-title">📍 Voltage Phasor (VA, VB, VC)</div>
-                            <div class="phasor-box"><canvas id="phasorVoltageChart"></canvas></div>
+                    <div class="chart-box">
+                        <div class="time-marker" id="voltageMarker"></div>
+                        <canvas id="voltageChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- CURRENT CHART -->
+                <div class="chart-section">
+                    <div class="section-title">
+                        <span id="currentTitle">📈 Current (Secondary)</span>
+                        <div class="chart-controls">
+                            <button class="chart-btn" onclick="zoomIn()">+ Zoom</button>
+                            <button class="chart-btn" onclick="zoomOut()">- Zoom</button>
                         </div>
-                        
-                        <div class="chart-section">
-                            <div class="section-title">📍 Current Phasor (IA, IB, IC)</div>
-                            <div class="phasor-box"><canvas id="phasorCurrentChart"></canvas></div>
-                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <div class="time-marker" id="currentMarker"></div>
+                        <canvas id="currentChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- PHASOR VIEW (INTEGRATED) -->
+                <div class="phasor-grid">
+                    <div class="phasor-box">
+                        <div class="phasor-title">📍 Voltage Phasor (VA, VB, VC)</div>
+                        <canvas id="phasorVoltageChart"></canvas>
+                    </div>
+                    <div class="phasor-box">
+                        <div class="phasor-title">📍 Current Phasor (IA, IB, IC)</div>
+                        <canvas id="phasorCurrentChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- DIGITAL SIGNALS SELECTOR & CHART -->
+                <div class="digital-selector">
+                    <div class="digital-label">🔌 Digital Signals (Multi-Select)</div>
+                    <div class="digital-grid" id="digitalCheckboxes"></div>
+                </div>
+                
+                <div class="chart-section">
+                    <div class="section-title">📊 Selected Digital Signals (Aligned X-Axis)</div>
+                    <div class="chart-box">
+                        <div class="time-marker" id="digitalMarker"></div>
+                        <canvas id="digitalChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -582,24 +503,88 @@
     </div>
 
     <script>
-        // ===== ENHANCED FAULT DATABASE (16 TYPES) =====
+        // ===== IMPROVED FAULT DATABASE =====
         const FAULT_DATABASE = {
-            'lightning_direct': { name: '⚡ Lightning-Direct', icon: '⚡', source: 'IEEE C62.92.2', characteristics: { peakI: {min:5000,max:200000,w:0.25}, riseTime: {min:0.0005,max:0.005,w:0.3}, duration: {min:0.05,max:0.5,w:0.15}, vDip: {min:0,max:20,w:0.15}, freqContent: {min:10,max:100,w:0.15} } },
-            'lightning_indirect': { name: '⚡ Lightning-Indirect', icon: '⚡', source: 'IEEE C62.92.2', characteristics: { peakI: {min:1000,max:5000,w:0.2}, riseTime: {min:0.005,max:0.01,w:0.25}, duration: {min:0.1,max:2,w:0.15}, vDip: {min:10,max:30,w:0.2}, asym: {min:30,max:80,w:0.2} } },
-            'vegetation_small': { name: '🌳 Vegetation-Small', icon: '🌳', source: 'CIGRE', characteristics: { peakI: {min:200,max:600,w:0.2}, riseTime: {min:20,max:80,w:0.15}, duration: {min:50,max:200,w:0.15}, vDip: {min:50,max:75,w:0.15}, thd: {min:35,max:60,w:0.25} } },
-            'vegetation_large': { name: '🌳 Vegetation-Large', icon: '🌳', source: 'CIGRE', characteristics: { peakI: {min:600,max:1500,w:0.2}, riseTime: {min:50,max:150,w:0.15}, duration: {min:100,max:500,w:0.2}, vDip: {min:60,max:90,w:0.15}, thd: {min:40,max:80,w:0.25} } },
-            '3phase_fault': { name: '🔴 3-Phase SC', icon: '🔴', source: 'IEEE C37.010', characteristics: { peakI: {min:2000,max:20000,w:0.2}, riseTime: {min:0.5,max:20,w:0.15}, duration: {min:10,max:150,w:0.15}, vDip: {min:10,max:40,w:0.15}, asym: {min:0,max:15,w:0.25}, phaseVar: {min:0,max:5,w:0.1} } },
-            '2phase_fault': { name: '🟠 2-Phase SC', icon: '🟠', source: 'IEEE C37.010', characteristics: { peakI: {min:1500,max:8000,w:0.2}, riseTime: {min:1,max:15,w:0.15}, duration: {min:20,max:150,w:0.15}, vDip: {min:30,max:70,w:0.15}, asym: {min:40,max:70,w:0.25}, phaseVar: {min:15,max:40,w:0.1} } },
-            '1phase_fault': { name: '🟡 1-Phase GF', icon: '🟡', source: 'IEEE C37.010', characteristics: { peakI: {min:100,max:2000,w:0.2}, riseTime: {min:5,max:100,w:0.15}, duration: {min:50,max:500,w:0.15}, vDip: {min:40,max:80,w:0.15}, asym: {min:60,max:90,w:0.25}, phaseVar: {min:60,max:100,w:0.1} } },
-            'phase_phase_fault': { name: '🟠 Phase-Phase', icon: '🟠', source: 'IEEE C37.010', characteristics: { peakI: {min:1200,max:6000,w:0.2}, riseTime: {min:2,max:20,w:0.15}, duration: {min:30,max:200,w:0.15}, vDip: {min:35,max:70,w:0.15}, asym: {min:45,max:75,w:0.2}, phaseVar: {min:20,max:45,w:0.15} } },
-            'overload': { name: '📈 Overload', icon: '📈', source: 'IEEE C37.95', characteristics: { peakI: {min:150,max:400,w:0.2}, riseTime: {min:50,max:200,w:0.15}, duration: {min:1000,max:600000,w:0.35}, vDip: {min:60,max:95,w:0.15}, asym: {min:5,max:20,w:0.1}, phaseVar: {min:0,max:10,w:0.05} } },
-            'harmonic_load': { name: '〰️ Harmonic-Load', icon: '〰️', source: 'IEC 61000-4-7', characteristics: { peakI: {min:150,max:400,w:0.1}, duration: {min:10000,max:600000,w:0.2}, thd: {min:35,max:65,w:0.4}, vDip: {min:90,max:100,w:0.15}, asym: {min:5,max:20,w:0.1}, phaseVar: {min:0,max:10,w:0.05} } },
-            'harmonic_converter': { name: '〰️ Harmonic-Conv', icon: '〰️', source: 'IEC 61000-4-7', characteristics: { peakI: {min:100,max:300,w:0.1}, duration: {min:10000,max:600000,w:0.2}, thd: {min:50,max:100,w:0.4}, vDip: {min:85,max:100,w:0.15}, asym: {min:5,max:20,w:0.1}, phaseVar: {min:0,max:10,w:0.05} } },
-            'transient_overvolt': { name: '⚡ Transient OV', icon: '⚡', source: 'IEEE C62.92.1', characteristics: { peakV: {min:1.5,max:3,w:0.3}, duration: {min:1,max:100,w:0.2}, riseTime: {min:0.1,max:10,w:0.2} } },
-            'ferroresonance': { name: '〰️ Ferroresonance', icon: '〰️', source: 'CIGRE WG37.43', characteristics: { peakV: {min:1.3,max:2.5,w:0.2}, peakI: {min:200,max:1000,w:0.2}, duration: {min:100,max:10000,w:0.2}, thd: {min:40,max:80,w:0.2} } },
-            'dc_injection': { name: '⚡ DC Injection', icon: '⚡', source: 'IEEE 1159', characteristics: { peakI: {min:100,max:500,w:0.2}, duration: {min:10,max:10000,w:0.2}, asym: {min:30,max:100,w:0.2} } },
-            'sustained_sag': { name: '📉 Voltage Sag', icon: '📉', source: 'IEEE 1159', characteristics: { vDip: {min:20,max:90,w:0.3}, duration: {min:20,max:600000,w:0.3}, peakI: {min:50,max:300,w:0.15} } },
-            'normal': { name: '✓ Normal', icon: '✓', source: 'IEC 61000-4-28', characteristics: { peakI: {min:50,max:150,w:0.2}, vDip: {min:95,max:105,w:0.3}, asym: {min:0,max:5,w:0.2}, thd: {min:0,max:15,w:0.2}, phaseVar: {min:0,max:5,w:0.1} } }
+            'lightning_direct': {
+                name: '⚡ Lightning-Direct', icon: '⚡', source: 'IEEE C62.92.2',
+                ranges: { peakI: [5000, 200000], riseTime: [0.0005, 0.005], duration: [0.05, 0.5], vDip: [0, 20] },
+                weights: { peakI: 0.25, riseTime: 0.3, duration: 0.15, vDip: 0.15, freqContent: 0.15 }
+            },
+            'lightning_indirect': {
+                name: '⚡ Lightning-Indirect', icon: '⚡', source: 'IEEE C62.92.2',
+                ranges: { peakI: [1000, 5000], riseTime: [0.005, 0.01], duration: [0.1, 2], vDip: [10, 30], asym: [30, 80] },
+                weights: { peakI: 0.2, riseTime: 0.25, duration: 0.15, vDip: 0.2, asym: 0.2 }
+            },
+            'vegetation_small': {
+                name: '🌳 Vegetation-Small', icon: '🌳', source: 'CIGRE',
+                ranges: { peakI: [200, 600], riseTime: [20, 80], duration: [50, 200], vDip: [50, 75], thd: [35, 60] },
+                weights: { peakI: 0.2, riseTime: 0.15, duration: 0.15, vDip: 0.15, thd: 0.25, asym: 0.1 }
+            },
+            'vegetation_large': {
+                name: '🌳 Vegetation-Large', icon: '🌳', source: 'CIGRE',
+                ranges: { peakI: [600, 1500], riseTime: [50, 150], duration: [100, 500], vDip: [60, 90], thd: [40, 80] },
+                weights: { peakI: 0.2, riseTime: 0.15, duration: 0.2, vDip: 0.15, thd: 0.25, asym: 0.05 }
+            },
+            '3phase_fault': {
+                name: '🔴 3-Phase SC', icon: '🔴', source: 'IEEE C37.010',
+                ranges: { peakI: [2000, 20000], riseTime: [0.5, 20], duration: [10, 150], vDip: [10, 40], asym: [0, 15], phaseVar: [0, 5] },
+                weights: { peakI: 0.25, riseTime: 0.15, duration: 0.1, vDip: 0.15, asym: 0.15, phaseVar: 0.15 }
+            },
+            '2phase_fault': {
+                name: '🟠 2-Phase SC', icon: '🟠', source: 'IEEE C37.010',
+                ranges: { peakI: [1500, 8000], riseTime: [1, 15], duration: [20, 150], vDip: [30, 70], asym: [40, 70], phaseVar: [15, 40] },
+                weights: { peakI: 0.2, riseTime: 0.15, duration: 0.1, vDip: 0.15, asym: 0.2, phaseVar: 0.2 }
+            },
+            '1phase_fault': {
+                name: '🟡 1-Phase GF', icon: '🟡', source: 'IEEE C37.010',
+                ranges: { peakI: [100, 2000], riseTime: [5, 100], duration: [50, 500], vDip: [40, 80], asym: [60, 100], phaseVar: [50, 100] },
+                weights: { peakI: 0.15, riseTime: 0.1, duration: 0.1, vDip: 0.1, asym: 0.25, phaseVar: 0.3 }
+            },
+            'phase_phase_fault': {
+                name: '🟠 Phase-Phase', icon: '🟠', source: 'IEEE C37.010',
+                ranges: { peakI: [1200, 6000], riseTime: [2, 20], duration: [30, 200], vDip: [35, 70], asym: [45, 75], phaseVar: [20, 45] },
+                weights: { peakI: 0.2, riseTime: 0.12, duration: 0.08, vDip: 0.1, asym: 0.25, phaseVar: 0.25 }
+            },
+            'overload': {
+                name: '📈 Overload', icon: '📈', source: 'IEEE C37.95',
+                ranges: { peakI: [150, 400], riseTime: [50, 200], duration: [1000, 600000], vDip: [60, 95], asym: [5, 20] },
+                weights: { peakI: 0.15, riseTime: 0.1, duration: 0.35, vDip: 0.2, asym: 0.2 }
+            },
+            'harmonic_load': {
+                name: '〰️ Harmonic-Load', icon: '〰️', source: 'IEC 61000-4-7',
+                ranges: { peakI: [150, 400], duration: [10000, 600000], thd: [35, 65], vDip: [90, 100] },
+                weights: { peakI: 0.1, duration: 0.2, thd: 0.5, vDip: 0.2 }
+            },
+            'harmonic_converter': {
+                name: '〰️ Harmonic-Conv', icon: '〰️', source: 'IEC 61000-4-7',
+                ranges: { peakI: [100, 300], duration: [10000, 600000], thd: [50, 100], vDip: [85, 100] },
+                weights: { peakI: 0.1, duration: 0.2, thd: 0.6, vDip: 0.1 }
+            },
+            'transient_overvolt': {
+                name: '⚡ Transient OV', icon: '⚡', source: 'IEEE C62.92.1',
+                ranges: { peakV: [1.5, 3], duration: [1, 100], riseTime: [0.1, 10] },
+                weights: { peakV: 0.4, duration: 0.3, riseTime: 0.3 }
+            },
+            'ferroresonance': {
+                name: '〰️ Ferroresonance', icon: '〰️', source: 'CIGRE WG37.43',
+                ranges: { peakV: [1.3, 2.5], peakI: [200, 1000], duration: [100, 10000], thd: [40, 80] },
+                weights: { peakV: 0.25, peakI: 0.25, duration: 0.25, thd: 0.25 }
+            },
+            'dc_injection': {
+                name: '⚡ DC Injection', icon: '⚡', source: 'IEEE 1159',
+                ranges: { peakI: [100, 500], duration: [10, 10000], asym: [30, 100] },
+                weights: { peakI: 0.3, duration: 0.3, asym: 0.4 }
+            },
+            'sustained_sag': {
+                name: '📉 Voltage Sag', icon: '📉', source: 'IEEE 1159',
+                ranges: { vDip: [20, 90], duration: [20, 600000], peakI: [50, 300] },
+                weights: { vDip: 0.4, duration: 0.4, peakI: 0.2 }
+            },
+            'normal': {
+                name: '✓ Normal', icon: '✓', source: 'IEC 61000-4-28',
+                ranges: { peakI: [50, 150], vDip: [95, 105], asym: [0, 5], thd: [0, 15] },
+                weights: { peakI: 0.25, vDip: 0.4, asym: 0.2, thd: 0.15 }
+            }
         };
 
         let allData = [];
@@ -610,13 +595,12 @@
         let iScale = 2.762230;
         let viewMode = 'secondary';
         let charts = {};
+        let selectedDigitalChannels = [0, 1, 2];  // Default channels
         
-        // Safe element getter dengan null check
         function safeGet(id) {
             return document.getElementById(id);
         }
         
-        // Initialize event listeners setelah DOM ready
         document.addEventListener('DOMContentLoaded', function() {
             const dropZone = safeGet('dropZone');
             const fileInput = safeGet('fileInput');
@@ -698,20 +682,46 @@
                 const durationEl = safeGet('duration');
                 if (durationEl) durationEl.textContent = maxDuration.toFixed(2) + ' s';
                 
+                // Create digital checkboxes
+                createDigitalCheckboxes();
+                
                 showLoading('Analyzing...');
                 setTimeout(() => {
                     analyze();
                     hideLoading();
                     
-                    const tabsContainer = safeGet('tabsContainer');
-                    if (tabsContainer) tabsContainer.classList.add('show');
-                    
                     const content = safeGet('content');
                     if (content) content.classList.add('show');
                     
-                    updateSyncedCharts();
+                    updateAnalysis();
                 }, 100);
             }, 50);
+        }
+        
+        function createDigitalCheckboxes() {
+            const container = safeGet('digitalCheckboxes');
+            if (!container) return;
+            
+            const labels = ['Any Trip', 'Z1', 'Z2', 'Z3', 'CB-A', 'CB-B', 'CB-C', 'Phase', 'A-Send', 'A-Recv', 'SOTF', 'TOR', 'Auto', 'Lock', 'ARIP', 'CB-Bad', 'Sync', 'VT-Fail'];
+            
+            let html = '';
+            for (let i = 0; i < 18; i++) {
+                const checked = selectedDigitalChannels.includes(i) ? 'checked' : '';
+                html += `<label class="digital-checkbox">
+                    <input type="checkbox" value="${i}" ${checked} onchange="updateDigitalChannels()">
+                    <label style="margin: 0; cursor: pointer; font-size: 8px;">${labels[i]}</label>
+                </label>`;
+            }
+            container.innerHTML = html;
+        }
+        
+        function updateDigitalChannels() {
+            const checkboxes = document.querySelectorAll('.digital-checkbox input');
+            selectedDigitalChannels = [];
+            checkboxes.forEach((cb, idx) => {
+                if (cb.checked) selectedDigitalChannels.push(idx);
+            });
+            updateAnalysis();
         }
         
         function setView(mode) {
@@ -722,7 +732,7 @@
             const currentTitle = safeGet('currentTitle');
             if (voltageTitle) voltageTitle.textContent = mode === 'primary' ? '⚡ Voltage (Primary)' : '⚡ Voltage (Secondary)';
             if (currentTitle) currentTitle.textContent = mode === 'primary' ? '📈 Current (Primary)' : '📈 Current (Secondary)';
-            updateSyncedCharts();
+            updateAnalysis();
         }
         
         function analyze() {
@@ -783,7 +793,16 @@
             const maxIrms = Math.max(irmsA, irmsB, irmsC);
             const minIrms = Math.min(irmsA, irmsB, irmsC);
             const asym = (maxIrms - minIrms) / (maxIrms || 1) * 100;
-            const phaseVar = asym;
+            
+            // IMPROVED PHASE VARIATION
+            const highThreshold = maxIrms * 0.5;
+            const highCount = [irmsA, irmsB, irmsC].filter(i => i > highThreshold).length;
+            let phaseVar = asym;
+            
+            // Better differentiation
+            if (highCount === 3) phaseVar = 0;      // 3-phase = all equal
+            if (highCount === 2) phaseVar = 40;     // 2-phase = 2 high, 1 low
+            if (highCount === 1) phaseVar = 80;     // 1-phase = 1 high, 2 low
             
             return {
                 peakI: peakI,
@@ -794,31 +813,54 @@
                 thd: thd,
                 asym: asym,
                 phaseVar: phaseVar,
+                highCount: highCount,
                 distStartTime: allData[distStart].t / 1e6
             };
         }
         
         function classifyFault(metrics) {
             let scores = {};
+            
             for (const [type, faultDef] of Object.entries(FAULT_DATABASE)) {
                 let score = 0;
-                const chars = faultDef.characteristics;
+                const ranges = faultDef.ranges;
+                const weights = faultDef.weights;
                 
-                if (chars.peakI && metrics.peakI >= chars.peakI.min && metrics.peakI <= chars.peakI.max) score += chars.peakI.w * 100;
-                if (chars.peakV && metrics.peakV >= chars.peakV.min && metrics.peakV <= chars.peakV.max) score += chars.peakV.w * 100;
-                if (chars.riseTime && metrics.riseTime >= chars.riseTime.min && metrics.riseTime <= chars.riseTime.max) score += chars.riseTime.w * 100;
-                if (chars.duration && metrics.duration >= chars.duration.min && metrics.duration <= chars.duration.max) score += chars.duration.w * 100;
-                if (chars.vDip && metrics.vDip >= chars.vDip.min && metrics.vDip <= chars.vDip.max) score += chars.vDip.w * 100;
-                if (chars.thd && metrics.thd >= chars.thd.min && metrics.thd <= chars.thd.max) score += chars.thd.w * 100;
-                if (chars.asym && metrics.asym >= chars.asym.min && metrics.asym <= chars.asym.max) score += chars.asym.w * 100;
-                if (chars.phaseVar && metrics.phaseVar >= chars.phaseVar.min && metrics.phaseVar <= chars.phaseVar.max) score += chars.phaseVar.w * 100;
+                // Check each metric and add weighted score
+                if (ranges.peakI && metrics.peakI >= ranges.peakI[0] && metrics.peakI <= ranges.peakI[1]) {
+                    score += weights.peakI * 100;
+                }
+                if (ranges.peakV && metrics.peakV >= ranges.peakV[0] && metrics.peakV <= ranges.peakV[1]) {
+                    score += weights.peakV * 100;
+                }
+                if (ranges.riseTime && metrics.riseTime >= ranges.riseTime[0] && metrics.riseTime <= ranges.riseTime[1]) {
+                    score += weights.riseTime * 100;
+                }
+                if (ranges.duration && metrics.duration >= ranges.duration[0] && metrics.duration <= ranges.duration[1]) {
+                    score += weights.duration * 100;
+                }
+                if (ranges.vDip && metrics.vDip >= ranges.vDip[0] && metrics.vDip <= ranges.vDip[1]) {
+                    score += weights.vDip * 100;
+                }
+                if (ranges.thd && metrics.thd >= ranges.thd[0] && metrics.thd <= ranges.thd[1]) {
+                    score += weights.thd * 100;
+                }
+                if (ranges.asym && metrics.asym >= ranges.asym[0] && metrics.asym <= ranges.asym[1]) {
+                    score += weights.asym * 100;
+                }
+                if (ranges.phaseVar) {
+                    // Better phase variation matching
+                    if (metrics.highCount === 3 && ranges.phaseVar[0] <= 5 && ranges.phaseVar[1] >= 5) score += (weights.phaseVar || 0.1) * 100;
+                    if (metrics.highCount === 2 && ranges.phaseVar[0] <= 40 && ranges.phaseVar[1] >= 40) score += (weights.phaseVar || 0.1) * 100;
+                    if (metrics.highCount === 1 && ranges.phaseVar[0] <= 80 && ranges.phaseVar[1] >= 80) score += (weights.phaseVar || 0.1) * 100;
+                }
                 
                 scores[type] = score;
             }
             
             const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
             const primary = FAULT_DATABASE[ranked[0][0]];
-            const confidence = Math.min(100, ranked[0][1] * 0.8);
+            const confidence = Math.min(100, ranked[0][1] / 10);
             
             return { primary, score: confidence, type: ranked[0][0], ranked: ranked, metrics: metrics };
         }
@@ -835,18 +877,15 @@
                 </div>
                 <div class="conclusion-detail">
                     <strong>Measured:</strong><br>
-                    I Peak: ${fault.metrics.peakI.toFixed(0)}A | V Peak: ${fault.metrics.peakV.toFixed(1)}kV<br>
-                    V Dip: ${(100-fault.metrics.vDip).toFixed(1)}% | Rise: ${fault.metrics.riseTime.toFixed(2)}ms<br>
-                    Duration: ${fault.metrics.duration.toFixed(0)}ms | Asym: ${fault.metrics.asym.toFixed(1)}% | PhaseVar: ${fault.metrics.phaseVar.toFixed(1)}%
+                    I: ${fault.metrics.peakI.toFixed(0)}A | V: ${fault.metrics.peakV.toFixed(1)}kV<br>
+                    Dip: ${(100-fault.metrics.vDip).toFixed(1)}% | Rise: ${fault.metrics.riseTime.toFixed(2)}ms<br>
+                    Dur: ${fault.metrics.duration.toFixed(0)}ms | THD: ${fault.metrics.thd.toFixed(1)}%<br>
+                    Asym: ${fault.metrics.asym.toFixed(1)}% | Phase: ${fault.metrics.highCount}-phase
                 </div>`;
             
             const conclusionEl = safeGet('conclusion');
-            if (!conclusionEl) {
-                console.error('conclusion element not found');
-                return;
-            }
+            if (conclusionEl) conclusionEl.innerHTML = html;
             
-            conclusionEl.innerHTML = html;
             const primaryFault = safeGet('primaryFault');
             if (primaryFault) primaryFault.textContent = fault.primary.icon + ' ' + fault.primary.name;
             
@@ -858,7 +897,7 @@
             let html = '';
             fault.ranked.forEach((item, idx) => {
                 const faultDef = FAULT_DATABASE[item[0]];
-                const score = Math.round(item[1] * 0.8);
+                const score = Math.round(item[1] / 10);
                 const isPrimary = idx === 0;
                 html += `<div class="fault-item ${isPrimary ? 'primary' : ''}">
                     <div class="fault-rank">#${idx+1}</div>
@@ -871,7 +910,7 @@
             if (faultList) faultList.innerHTML = html;
         }
         
-        function updateSyncedCharts() {
+        function updateAnalysis() {
             if (allData.length === 0) return;
             
             const timeSlider = safeGet('timeSlider');
@@ -883,13 +922,9 @@
             const endTime = Math.min(startTime + windowDuration, maxDuration);
             
             const markerPos = (sliderVal * 100).toFixed(1);
-            const voltageMarker = safeGet('voltageMarker');
-            const currentMarker = safeGet('currentMarker');
-            const digitalMarker = safeGet('digitalMarker');
-            
-            if (voltageMarker) voltageMarker.style.left = markerPos + '%';
-            if (currentMarker) currentMarker.style.left = markerPos + '%';
-            if (digitalMarker) digitalMarker.style.left = markerPos + '%';
+            [safeGet('voltageMarker'), safeGet('currentMarker'), safeGet('digitalMarker')].forEach(el => {
+                if (el) el.style.left = markerPos + '%';
+            });
             
             const timeCurrentDisplay = safeGet('timeCurrentDisplay');
             const timeWindowDisplay = safeGet('timeWindowDisplay');
@@ -902,30 +937,27 @@
             const voltages = filtered.map(d => Math.sqrt(d.va**2 + d.vb**2 + d.vc**2) / Math.sqrt(3) * vScale / 1000);
             const currents = filtered.map(d => Math.sqrt(d.ia**2 + d.ib**2 + d.ic**2) / Math.sqrt(3) * iScale);
             
-            const iPeakEl = safeGet('iPeak');
-            const vPeakEl = safeGet('vPeak');
-            const vDipEl = safeGet('vDip');
-            const duration2El = safeGet('duration2');
-            const riseTimeEl = safeGet('riseTime');
-            const asymEl = safeGet('asym');
-            const thdEl = safeGet('thd');
-            const phaseVarEl = safeGet('phaseVar');
-            
-            if (iPeakEl) iPeakEl.textContent = Math.max(...currents).toFixed(0);
-            if (vPeakEl) vPeakEl.textContent = Math.max(...voltages).toFixed(1);
-            if (vDipEl) vDipEl.textContent = (100 - (Math.min(...voltages) / 87.5) * 100).toFixed(1);
-            if (duration2El) duration2El.textContent = ((endTime - startTime) * 1000).toFixed(0);
-            if (riseTimeEl) riseTimeEl.textContent = ((filtered[filtered.length - 1].t - filtered[0].t) / 1000).toFixed(2);
-            if (asymEl) asymEl.textContent = calculateAsymmetry(filtered).toFixed(1);
-            if (thdEl) thdEl.textContent = calculateTHD(filtered).toFixed(1);
-            if (phaseVarEl) phaseVarEl.textContent = calculatePhaseVar(filtered).toFixed(1);
+            [{ el: 'iPeak', val: Math.max(...currents).toFixed(0) },
+             { el: 'vPeak', val: Math.max(...voltages).toFixed(1) },
+             { el: 'vDip', val: (100 - (Math.min(...voltages) / 87.5) * 100).toFixed(1) },
+             { el: 'duration2', val: ((endTime - startTime) * 1000).toFixed(0) },
+             { el: 'riseTime', val: ((filtered[filtered.length - 1].t - filtered[0].t) / 1000).toFixed(2) },
+             { el: 'asym', val: calculateAsymmetry(filtered).toFixed(1) },
+             { el: 'thd', val: calculateTHD(filtered).toFixed(1) },
+             { el: 'phaseVar', val: calculatePhaseVar(filtered).toFixed(1) }
+            ].forEach(({el, val}) => {
+                const elem = safeGet(el);
+                if (elem) elem.textContent = val;
+            });
             
             updateAllCharts(filtered, startTime, endTime);
+            updatePhasors(filtered);
         }
         
         function updateAllCharts(filtered, startTime, endTime) {
             const timeLabels = filtered.map(d => (d.t / 1e6).toFixed(3));
             
+            // VOLTAGE CHART
             const vData = [
                 { label: 'VA', data: filtered.map(d => d.va * vScale / 1000), borderColor: '#667eea', borderWidth: 1.5, pointRadius: 0, tension: 0.05, fill: false },
                 { label: 'VB', data: filtered.map(d => d.vb * vScale / 1000), borderColor: '#ed64a6', borderWidth: 1.5, pointRadius: 0, tension: 0.05, fill: false },
@@ -948,6 +980,7 @@
                 charts.volt.update('none');
             }
             
+            // CURRENT CHART
             const iData = [
                 { label: 'IA', data: filtered.map(d => d.ia * iScale), borderColor: '#667eea', borderWidth: 1.5, pointRadius: 0, tension: 0.05, fill: false },
                 { label: 'IB', data: filtered.map(d => d.ib * iScale), borderColor: '#ed64a6', borderWidth: 1.5, pointRadius: 0, tension: 0.05, fill: false },
@@ -971,20 +1004,23 @@
                 charts.curr.update('none');
             }
             
+            // DIGITAL CHART (selected channels only)
             const digitalDataset = [];
-            for (let ch = 0; ch < 18; ch++) {
-                const data = filtered.map((d, idx) => d.digital[ch] ? (ch + 0.5) : null);
+            const colors = ['#667eea', '#ed64a6', '#ff9a42', '#4caf50', '#9c27b0', '#ff5722', '#00bcd4', '#8bc34a', '#f44336', '#673ab7', '#3f51b5', '#2196f3', '#009688', '#cddc39', '#ffc107', '#ff9800', '#795548', '#607d8b'];
+            
+            selectedDigitalChannels.forEach((ch, idx) => {
+                const data = filtered.map((d, i) => d.digital[ch] ? (ch + 0.5) : null);
                 digitalDataset.push({
-                    label: 'Ch' + ch,
+                    label: `Ch${ch}`,
                     data: data,
-                    borderColor: '#667eea',
-                    backgroundColor: '#667eea',
-                    pointRadius: 2,
+                    borderColor: colors[idx % colors.length],
+                    backgroundColor: colors[idx % colors.length],
+                    pointRadius: 3,
                     pointHitRadius: 5,
                     fill: false,
                     tension: 0
                 });
-            }
+            });
             
             const digitalChartEl = safeGet('digitalChart');
             if (!digitalChartEl) return;
@@ -992,7 +1028,7 @@
             if (!charts.digital) {
                 charts.digital = new Chart(digitalChartEl, {
                     type: 'scatter', data: { datasets: digitalDataset },
-                    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { type: 'linear', min: startTime, max: endTime, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 7 } } }, y: { type: 'linear', min: -1, max: 18, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1, font: { size: 7 } } } } }
+                    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: true, labels: { font: { size: 8 } } } }, scales: { x: { type: 'linear', min: startTime, max: endTime, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 7 } } }, y: { type: 'linear', min: -1, max: 32, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 2, font: { size: 7 } } } } }
                 });
             } else {
                 charts.digital.data.datasets = digitalDataset;
@@ -1002,8 +1038,85 @@
             }
         }
         
-        function updatePhasorsSync() {
-            // Phasor update logic
+        function updatePhasors(data) {
+            if (data.length < 50) return;
+            
+            const calcPhasor = (phase) => {
+                let re = 0, im = 0;
+                for (let i = 0; i < phase.length; i++) {
+                    const angle = (i / phase.length) * 2 * Math.PI;
+                    re += phase[i] * Math.cos(angle);
+                    im += phase[i] * Math.sin(angle);
+                }
+                return { mag: Math.sqrt(re*re + im*im) / phase.length, angle: Math.atan2(im, re) * 180 / Math.PI };
+            };
+            
+            const va = data.map(d => d.va * vScale / 1000);
+            const vb = data.map(d => d.vb * vScale / 1000);
+            const vc = data.map(d => d.vc * vScale / 1000);
+            const ia = data.map(d => d.ia * iScale);
+            const ib = data.map(d => d.ib * iScale);
+            const ic = data.map(d => d.ic * iScale);
+            
+            const vPhasors = [calcPhasor(va), calcPhasor(vb), calcPhasor(vc)];
+            const iPhasors = [calcPhasor(ia), calcPhasor(ib), calcPhasor(ic)];
+            
+            drawPhasor('phasorVoltageChart', vPhasors, ['VA', 'VB', 'VC'], '#667eea', '#ed64a6', '#ff9a42');
+            drawPhasor('phasorCurrentChart', iPhasors, ['IA', 'IB', 'IC'], '#667eea', '#ed64a6', '#ff9a42');
+        }
+        
+        function drawPhasor(canvasId, phasors, labels, c1, c2, c3) {
+            const canvas = safeGet(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const radius = Math.min(w, h) / 2 - 20;
+            const scale = radius / (Math.max(...phasors.map(p => p.mag)) || 1);
+            
+            ctx.clearRect(0, 0, w, h);
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 0.5;
+            
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * 30) * Math.PI / 180;
+                const x2 = centerX + radius * Math.cos(angle);
+                const y2 = centerY - radius * Math.sin(angle);
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            const colors = [c1, c2, c3];
+            phasors.forEach((p, idx) => {
+                const angle = p.angle * Math.PI / 180;
+                const x = centerX + p.mag * scale * Math.cos(angle);
+                const y = centerY - p.mag * scale * Math.sin(angle);
+                
+                ctx.strokeStyle = colors[idx];
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                
+                ctx.fillStyle = colors[idx];
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.fillStyle = colors[idx];
+                ctx.font = 'bold 9px Arial';
+                ctx.fillText(labels[idx] + '(' + p.mag.toFixed(0) + ')', x + 5, y - 5);
+            });
         }
         
         function calculateAsymmetry(data) {
@@ -1032,16 +1145,8 @@
             return Math.min(100, (Math.sqrt(variance / currents.length) / (mean || 1)) * 100);
         }
         
-        function zoomIn() { if (zoomLevel < 5) { zoomLevel *= 1.3; updateSyncedCharts(); } }
-        function zoomOut() { if (zoomLevel > 1) { zoomLevel /= 1.3; updateSyncedCharts(); } }
-        
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            const tabEl = safeGet(tab);
-            if (tabEl) tabEl.classList.add('active');
-            if (event && event.target) event.target.classList.add('active');
-        }
+        function zoomIn() { if (zoomLevel < 5) { zoomLevel *= 1.3; updateAnalysis(); } }
+        function zoomOut() { if (zoomLevel > 1) { zoomLevel /= 1.3; updateAnalysis(); } }
     </script>
 </body>
 </html>
