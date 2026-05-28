@@ -480,10 +480,23 @@
                 </div>
                 
                 <div class="chart-section">
-                    <div class="section-title">📊 Selected Digital Signals</div>
-                    <div class="chart-box">
+                    <div class="section-title">📊 Selected Digital Signals (Real-Time)</div>
+                    <div class="chart-box" style="height: 280px;">
                         <div class="time-marker" id="digitalMarker"></div>
                         <canvas id="digitalChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- DISTURBANCE DETECTION TIME -->
+                <div class="chart-section" id="disturbanceSection" style="display: none; background: #fff3cd; border: 1px solid #ffc107;">
+                    <div class="section-title" style="color: #856404;">
+                        ⚠️ DISTURBANCE DETECTED
+                    </div>
+                    <div style="padding: 8px; color: #856404; font-size: 10px; line-height: 1.6;">
+                        <strong>Detection Time:</strong> <span id="disturbanceTime" style="font-family: monospace; font-weight: 600; color: #333;">-</span> s<br>
+                        <strong>Duration:</strong> <span id="disturbanceDuration" style="font-family: monospace; font-weight: 600; color: #333;">-</span> ms<br>
+                        <strong>First Sample:</strong> <span id="disturbanceSample" style="font-family: monospace; font-weight: 600; color: #333;">-</span><br>
+                        <strong>Peak Current:</strong> <span id="disturbancePeakI" style="font-family: monospace; font-weight: 600; color: #d9534f;">-</span> A
                     </div>
                 </div>
             </div>
@@ -707,6 +720,23 @@
             const fault = classifyFault(faultMetrics);
             displayConclusion(fault);
             displayAllRankedFaults(fault);
+            displayDisturbanceInfo(faultMetrics);
+        }
+        
+        function displayDisturbanceInfo(metrics) {
+            const section = safeGet('disturbanceSection');
+            if (!section) return;
+            
+            // Show disturbance section if fault detected
+            if (metrics.peakI > 100) {
+                section.style.display = 'block';
+                safeSet('disturbanceTime', metrics.distStartTime.toFixed(3));
+                safeSet('disturbanceDuration', metrics.duration.toFixed(0));
+                safeSet('disturbanceSample', '#' + allData.findIndex(d => d.ia * iScale > 100).toLocaleString());
+                safeSet('disturbancePeakI', metrics.peakI.toFixed(0));
+            } else {
+                section.style.display = 'none';
+            }
         }
         
         function calculateMetrics() {
@@ -1007,21 +1037,28 @@
                 charts.curr.update('none');
             }
             
-            // DIGITAL CHART
+            // DIGITAL CHART - VISIBLE WITH SELECTED CHANNELS
             const digitalDataset = [];
-            const colors = ['#667eea', '#ed64a6', '#ff9a42', '#4caf50', '#9c27b0', '#ff5722', '#00bcd4', '#8bc34a'];
+            const colors = ['#667eea', '#ed64a6', '#ff9a42', '#4caf50', '#9c27b0', '#ff5722', '#00bcd4', '#8bc34a', '#f44336', '#673ab7'];
             
             selectedDigitalChannels.forEach((ch, idx) => {
-                const data = filtered.map((d) => d.digital[ch] ? (ch + 0.5) : null);
+                const data = [];
+                filtered.forEach((d, sampleIdx) => {
+                    if (d.digital[ch]) {
+                        data.push({ x: d.t / 1e6, y: ch });
+                    }
+                });
+                
                 digitalDataset.push({
-                    label: `Ch${ch}`,
+                    label: `Ch${ch} (${['Any Trip', 'Z1', 'Z2', 'Z3', 'CB-A', 'CB-B', 'CB-C', 'Phase', 'A-Send', 'A-Recv', 'SOTF', 'TOR', 'Auto', 'Lock', 'ARIP', 'CB-Bad', 'Sync', 'VT-Fail'][ch]})`,
                     data: data,
                     borderColor: colors[idx % colors.length],
                     backgroundColor: colors[idx % colors.length],
-                    pointRadius: 2.5,
-                    pointHitRadius: 5,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointHitRadius: 8,
                     fill: false,
-                    tension: 0
+                    showLine: false
                 });
             });
             
@@ -1036,10 +1073,29 @@
                         responsive: true, 
                         maintainAspectRatio: false, 
                         animation: false, 
-                        plugins: { legend: { display: selectedDigitalChannels.length > 0, labels: { font: { size: 8 }, padding: 6 } } }, 
+                        plugins: { 
+                            legend: { 
+                                display: selectedDigitalChannels.length > 0, 
+                                labels: { font: { size: 8 }, padding: 6, usePointStyle: true, pointStyle: 'circle' } 
+                            } 
+                        }, 
                         scales: { 
-                            x: { type: 'linear', min: startTime, max: endTime, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 7 } } }, 
-                            y: { type: 'linear', min: -1, max: 32, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 2, font: { size: 7 } } } 
+                            x: { 
+                                type: 'linear', 
+                                min: startTime, 
+                                max: endTime, 
+                                grid: { color: 'rgba(0,0,0,0.05)' }, 
+                                ticks: { font: { size: 7 } },
+                                title: { display: true, text: 'Time (s)', font: { size: 8 } }
+                            }, 
+                            y: { 
+                                type: 'linear', 
+                                min: -1, 
+                                max: 18, 
+                                grid: { color: 'rgba(0,0,0,0.05)' }, 
+                                ticks: { stepSize: 1, font: { size: 7 } },
+                                title: { display: true, text: 'Channel #', font: { size: 8 } }
+                            } 
                         } 
                     }
                 });
