@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relay Fault Analyzer Pro v2 - Enhanced</title>
+    <title>Relay Fault Analyzer Final - Complete Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,7 +13,7 @@
             min-height: 100vh;
             padding: 15px;
         }
-        .container { max-width: 2600px; margin: 0 auto; }
+        .container { max-width: 3000px; margin: 0 auto; }
         
         .header {
             background: white;
@@ -50,6 +50,48 @@
         .file-input { display: none; }
         .btn-browse { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap; }
         .btn-browse:hover { background: #764ba2; }
+        
+        .controls-section {
+            background: white;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .control-label {
+            font-weight: 600;
+            font-size: 11px;
+            color: #333;
+        }
+        
+        .control-select, .control-btn {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .control-select:hover, .control-btn:hover {
+            background: #f0e6ff;
+            border-color: #667eea;
+        }
+        
+        .control-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
         
         .loading-overlay {
             position: fixed;
@@ -96,26 +138,8 @@
             margin-bottom: 8px;
         }
         
-        .loading-subtext {
-            color: #999;
-            font-size: 12px;
-        }
-        
         .file-info { background: white; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 11px; color: #666; display: none; }
         .file-info.active { display: block; }
-        
-        .ct-pt-config {
-            background: white;
-            padding: 12px 15px;
-            border-bottom: 1px solid #e0e0e0;
-            display: none;
-            font-size: 11px;
-        }
-        
-        .ct-pt-config.active { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .ct-pt-item { display: flex; flex-direction: column; gap: 3px; }
-        .ct-pt-label { font-weight: 600; color: #333; }
-        .ct-pt-input { padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; }
         
         .tabs {
             background: white;
@@ -143,52 +167,56 @@
         
         .content {
             display: grid;
-            grid-template-columns: 1fr 280px;
+            grid-template-columns: 1fr 320px;
             gap: 0;
             background: white;
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             border-radius: 0 0 12px 12px;
+            min-height: 500px;
         }
         
-        .main { padding: 15px; }
+        .main { padding: 15px; overflow-y: auto; }
         
-        .waveform-container {
+        .waveform-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .chart-container {
             background: #f8f9fa;
             border-radius: 8px;
             border: 1px solid #e0e0e0;
             padding: 10px;
-            margin-bottom: 10px;
         }
         
-        .waveform-header {
+        .chart-title {
+            font-weight: 600;
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-            font-size: 11px;
         }
         
-        .waveform-title {
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .waveform-controls {
+        .chart-controls {
             display: flex;
             gap: 4px;
         }
         
-        .waveform-btn {
-            padding: 4px 8px;
+        .chart-btn {
+            padding: 3px 6px;
             border: 1px solid #ddd;
             border-radius: 3px;
             background: white;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 500;
         }
         
-        .waveform-btn:hover {
+        .chart-btn:hover {
             background: #667eea;
             color: white;
             border-color: #667eea;
@@ -196,16 +224,56 @@
         
         .chart-box {
             position: relative;
-            height: 400px;
+            height: 320px;
             width: 100%;
         }
+        
+        .digital-signals {
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .digital-title {
+            font-weight: 600;
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .digital-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .digital-item {
+            background: white;
+            padding: 6px;
+            border-radius: 4px;
+            border-left: 2px solid #e0e0e0;
+            font-size: 8px;
+        }
+        
+        .digital-item.active {
+            background: #c8e6c9;
+            border-left-color: #2e7d32;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+        
+        .digital-label { font-weight: 600; }
+        .digital-value { color: #999; font-size: 7px; }
         
         .sidebar {
             background: #f8f9fa;
             padding: 12px;
             border-left: 1px solid #e0e0e0;
             overflow-y: auto;
-            max-height: 100vh;
         }
         
         .tab-content { display: none; }
@@ -239,52 +307,6 @@
         .group { margin-bottom: 10px; }
         .group-title { font-weight: 600; font-size: 10px; color: #667eea; text-transform: uppercase; margin-bottom: 6px; }
         
-        button {
-            width: 100%;
-            padding: 6px;
-            margin-bottom: 3px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: white;
-            font-size: 10px;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        
-        button:hover { background: #667eea; color: white; border-color: #667eea; }
-        button.active { background: #667eea; color: white; }
-        
-        input[type="range"] {
-            width: 100%;
-            height: 4px;
-            margin: 6px 0;
-            border-radius: 2px;
-            background: #ddd;
-            -webkit-appearance: none;
-        }
-        
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-        }
-        
-        .display {
-            background: white;
-            padding: 5px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: 600;
-            color: #667eea;
-            text-align: center;
-            border: 1px solid #e0e0e0;
-            font-family: monospace;
-            margin-bottom: 6px;
-        }
-        
         .stat {
             background: white;
             padding: 6px;
@@ -301,27 +323,120 @@
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
-            padding: 8px;
+            padding: 0;
             font-size: 8px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
         
         .fault-item {
-            padding: 4px;
-            margin-bottom: 3px;
-            background: #f8f9fa;
-            border-left: 2px solid #667eea;
+            padding: 6px 8px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             cursor: pointer;
+            background: white;
         }
         
         .fault-item:hover {
-            background: #e8eef7;
+            background: #f0e6ff;
         }
         
-        .fault-rank { font-weight: 600; color: #667eea; }
-        .fault-name { color: #333; }
-        .fault-score { float: right; color: #666; }
+        .fault-item.primary {
+            background: #e8eef7;
+            border-bottom: 2px solid #667eea;
+            font-weight: 600;
+        }
+        
+        .fault-rank { font-weight: 600; color: #667eea; min-width: 20px; }
+        .fault-name { flex: 1; color: #333; }
+        .fault-score { color: #666; min-width: 35px; text-align: right; }
+        
+        .phasor-container {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .phasor-title {
+            font-weight: 600;
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .phasor-box {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+        
+        .time-slider-container {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .time-slider-label {
+            font-weight: 600;
+            font-size: 10px;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        
+        .time-slider {
+            width: 100%;
+            height: 6px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            background: #ddd;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .time-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .time-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 9px;
+        }
+        
+        .time-box {
+            background: #f8f9fa;
+            padding: 6px;
+            border-radius: 4px;
+            border-left: 2px solid #667eea;
+        }
+        
+        .time-label { color: #999; font-size: 8px; margin-bottom: 2px; }
+        .time-value { font-weight: 600; color: #667eea; font-family: monospace; font-size: 9px; }
     </style>
 </head>
 <body>
@@ -329,14 +444,14 @@
         <div class="loading-box">
             <div class="spinner"></div>
             <div class="loading-text">Processing Data...</div>
-            <div class="loading-subtext" id="loadingMessage">Parsing samples...</div>
+            <div style="color: #999; font-size: 12px;" id="loadingMessage">Parsing samples...</div>
         </div>
     </div>
 
     <div class="container">
         <div class="header">
-            <h1>⚡ Relay Fault Analyzer Pro v2 - Enhanced Edition</h1>
-            <p>Large Waveform Display | Pan/Zoom Flexible | Loading Indicator | Extended Fault Types | Optimized Performance</p>
+            <h1>⚡ Relay Fault Analyzer - Final Edition</h1>
+            <p>Complete Waveform Analysis | All Ranked Faults | Phasor Diagram | Digital Signals | Primary/Secondary View</p>
         </div>
         
         <div class="upload-section">
@@ -353,74 +468,89 @@
             <strong>File:</strong> <span id="fileName">-</span> | <strong>Samples:</strong> <span id="sampleCount">-</span> | <strong>Duration:</strong> <span id="duration">-</span>
         </div>
         
-        <div class="ct-pt-config" id="ctptConfig">
-            <div class="ct-pt-item">
-                <div class="ct-pt-label">CT Ratio</div>
-                <input type="text" id="ctRatio" class="ct-pt-input" value="1000/5" onchange="updateCTPT()">
+        <div class="controls-section" id="controlsSection" style="display: none;">
+            <div class="control-group">
+                <span class="control-label">View:</span>
+                <button class="control-btn active" onclick="setView('secondary')">Secondary</button>
+                <button class="control-btn" onclick="setView('primary')">Primary</button>
             </div>
-            <div class="ct-pt-item">
-                <div class="ct-pt-label">PT Ratio</div>
-                <input type="text" id="ptRatio" class="ct-pt-input" value="275000/110" onchange="updateCTPT()">
+            <div class="control-group">
+                <span class="control-label">CT Ratio:</span>
+                <input type="text" id="ctRatio" class="control-select" value="1000/5" onchange="updateScales()" style="width: 70px;">
             </div>
-            <div class="ct-pt-item">
-                <div class="ct-pt-label">V Scale</div>
-                <input type="number" id="vScale" class="ct-pt-input" value="11.889732" step="0.001" onchange="updateCTPT()">
-            </div>
-            <div class="ct-pt-item">
-                <div class="ct-pt-label">I Scale</div>
-                <input type="number" id="iScale" class="ct-pt-input" value="2.762230" step="0.001" onchange="updateCTPT()">
+            <div class="control-group">
+                <span class="control-label">PT Ratio:</span>
+                <input type="text" id="ptRatio" class="control-select" value="275000/110" onchange="updateScales()" style="width: 70px;">
             </div>
         </div>
         
         <div class="tabs" id="tabsContainer" style="display: none;">
             <button class="tab-btn active" onclick="switchTab('waveform')">📈 Waveform</button>
+            <button class="tab-btn" onclick="switchTab('phasor')">📍 Phasor</button>
             <button class="tab-btn" onclick="switchTab('analysis')">📊 Analysis</button>
-            <button class="tab-btn" onclick="switchTab('reference')">📚 Reference</button>
         </div>
         
         <div class="content" id="content" style="display: none;">
-            <!-- WAVEFORM TAB (FULL WIDTH) -->
-            <div id="waveform" class="tab-content active" style="grid-column: 1/-1; padding: 15px;">
-                <div class="waveform-container">
-                    <div class="waveform-header">
-                        <div class="waveform-title">⚡ Voltage (VA, VB, VC)</div>
-                        <div class="waveform-controls">
-                            <button class="waveform-btn" onclick="zoomIn()">🔍+</button>
-                            <button class="waveform-btn" onclick="zoomOut()">🔍-</button>
-                            <button class="waveform-btn" onclick="resetZoom()">Reset</button>
-                            <button class="waveform-btn" onclick="panLeft()">◄</button>
-                            <button class="waveform-btn" onclick="panRight()">►</button>
+            <!-- WAVEFORM TAB -->
+            <div id="waveform" class="tab-content active">
+                <div class="main">
+                    <div class="waveform-grid">
+                        <div class="chart-container">
+                            <div class="chart-title">
+                                <span id="voltageTitle">⚡ Voltage (Secondary)</span>
+                                <div class="chart-controls">
+                                    <button class="chart-btn" onclick="zoomInVolt()">+</button>
+                                    <button class="chart-btn" onclick="zoomOutVolt()">-</button>
+                                </div>
+                            </div>
+                            <div class="chart-box"><canvas id="voltageChart"></canvas></div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <div class="chart-title">
+                                <span id="currentTitle">📈 Current (Secondary)</span>
+                                <div class="chart-controls">
+                                    <button class="chart-btn" onclick="zoomInCurr()">+</button>
+                                    <button class="chart-btn" onclick="zoomOutCurr()">-</button>
+                                </div>
+                            </div>
+                            <div class="chart-box"><canvas id="currentChart"></canvas></div>
                         </div>
                     </div>
-                    <div class="chart-box"><canvas id="voltageChart"></canvas></div>
-                </div>
-                
-                <div class="waveform-container">
-                    <div class="waveform-header">
-                        <div class="waveform-title">📈 Current (IA, IB, IC, IN)</div>
-                        <div class="waveform-controls">
-                            <button class="waveform-btn" onclick="zoomIn()">🔍+</button>
-                            <button class="waveform-btn" onclick="zoomOut()">🔍-</button>
-                            <button class="waveform-btn" onclick="resetZoom()">Reset</button>
-                            <button class="waveform-btn" onclick="panLeft()">◄</button>
-                            <button class="waveform-btn" onclick="panRight()">►</button>
+                    
+                    <div class="digital-signals">
+                        <div class="digital-title">🔌 Digital Signals (Aligned with Time)</div>
+                        <div class="digital-grid" id="digitalGrid"></div>
+                    </div>
+                    
+                    <div class="time-slider-container">
+                        <div class="time-slider-label">⏱️ Time Navigation (Smooth)</div>
+                        <input type="range" id="timeSlider" class="time-slider" min="0" max="10000" value="0" oninput="updateTimeSmooth()">
+                        <div class="time-display">
+                            <div class="time-box">
+                                <div class="time-label">Start Time</div>
+                                <div class="time-value" id="timeStartDisplay">0.00s</div>
+                            </div>
+                            <div class="time-box">
+                                <div class="time-label">Window</div>
+                                <div class="time-value" id="timeDurationDisplay">0.00s</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="chart-box"><canvas id="currentChart"></canvas></div>
                 </div>
-                
-                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
-                    <div style="font-weight: 600; font-size: 10px; margin-bottom: 6px; color: #333;">⏱️ Time Navigation</div>
-                    <input type="range" id="timeRange" min="0" max="100" value="0" oninput="updateTime()" style="width: 100%; margin-bottom: 6px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 9px;">
-                        <div>
-                            <div style="color: #999; margin-bottom: 2px;">Start Time</div>
-                            <div style="font-weight: 600; color: #667eea; font-family: monospace;" id="timeStart">0.00s</div>
-                        </div>
-                        <div>
-                            <div style="color: #999; margin-bottom: 2px;">Window Duration</div>
-                            <div style="font-weight: 600; color: #667eea; font-family: monospace;" id="timeDuration">0.00s</div>
-                        </div>
+            </div>
+            
+            <!-- PHASOR TAB -->
+            <div id="phasor" class="tab-content">
+                <div class="main">
+                    <div class="phasor-container">
+                        <div class="phasor-title">📍 Phasor Diagram - Voltage (VA, VB, VC)</div>
+                        <div class="phasor-box"><canvas id="phasorVoltageChart"></canvas></div>
+                    </div>
+                    
+                    <div class="phasor-container">
+                        <div class="phasor-title">📍 Phasor Diagram - Current (IA, IB, IC)</div>
+                        <div class="phasor-box"><canvas id="phasorCurrentChart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -433,18 +563,11 @@
                 </div>
             </div>
             
-            <!-- REFERENCE TAB -->
-            <div id="reference" class="tab-content">
-                <div class="main">
-                    <div id="referenceDB"></div>
-                </div>
-            </div>
-            
             <!-- SIDEBAR -->
             <div class="sidebar">
-                <div style="background: #667eea; color: white; padding: 8px; border-radius: 4px; margin-bottom: 8px; text-align: center;">
-                    <div id="primaryFault" style="font-weight: 600; font-size: 10px;">Analyzing...</div>
-                    <div id="confidenceBadge" style="font-size: 8px; margin-top: 3px;">-</div>
+                <div style="background: #667eea; color: white; padding: 10px; border-radius: 6px; margin-bottom: 10px; text-align: center;">
+                    <div id="primaryFault" style="font-weight: 600; font-size: 10px; margin-bottom: 3px;">Analyzing...</div>
+                    <div id="confidenceBadge" style="font-size: 8px;">-</div>
                 </div>
                 
                 <div class="group">
@@ -480,7 +603,7 @@
                 </div>
                 
                 <div class="group">
-                    <div class="group-title">📋 Ranked Faults</div>
+                    <div class="group-title">📋 All Ranked Faults</div>
                     <div class="fault-list" id="faultList"></div>
                 </div>
             </div>
@@ -488,250 +611,37 @@
     </div>
 
     <script>
-        // ===== EXTENDED FAULT FINGERPRINT DATABASE (15 TYPES) =====
+        // ===== FAULT DATABASE (16 TYPES) =====
         const FAULT_DATABASE = {
-            'lightning_direct': {
-                name: '⚡ Lightning - Direct Stroke',
-                icon: '⚡',
-                source: 'IEEE C62.92.2',
-                characteristics: {
-                    peakI: { min: 5000, max: 200000, weight: 0.25 },
-                    riseTime: { min: 0.0005, max: 0.005, weight: 0.3 },
-                    duration: { min: 0.05, max: 0.5, weight: 0.15 },
-                    vDip: { min: 0, max: 20, weight: 0.15 },
-                    freqContent: { min: 10, max: 100, weight: 0.15 }
-                },
-                keyIndicators: ['Extreme current 5-200kA', 'Ultra-fast rise <5 μs', 'Very short duration <0.5ms', 'High frequency 10-100kHz'],
-                realWorldExample: 'Peak 25,000A, Rise 2μs, Duration 0.3ms'
-            },
-            'lightning_indirect': {
-                name: '⚡ Lightning - Indirect/Coupling',
-                icon: '⚡',
-                source: 'IEEE C62.92.2',
-                characteristics: {
-                    peakI: { min: 1000, max: 5000, weight: 0.2 },
-                    riseTime: { min: 0.005, max: 0.01, weight: 0.25 },
-                    duration: { min: 0.1, max: 2, weight: 0.15 },
-                    vDip: { min: 10, max: 30, weight: 0.2 },
-                    asym: { min: 30, max: 80, weight: 0.2 }
-                },
-                keyIndicators: ['High current 1-5kA', 'Fast rise 5-10 μs', 'Short duration <2ms', 'Asymmetric phase'],
-                realWorldExample: 'Peak 3,500A, Rise 5μs, Asymmetry 65%'
-            },
-            'vegetation_small': {
-                name: '🌳 Vegetation - Small Contact',
-                icon: '🌳',
-                source: 'CIGRE, Field Experience',
-                characteristics: {
-                    peakI: { min: 200, max: 600, weight: 0.2 },
-                    riseTime: { min: 20, max: 80, weight: 0.15 },
-                    duration: { min: 50, max: 200, weight: 0.15 },
-                    vDip: { min: 50, max: 75, weight: 0.15 },
-                    thd: { min: 35, max: 60, weight: 0.25 },
-                    faultResist: { min: 5000, max: 50000, weight: 0.1 }
-                },
-                keyIndicators: ['Moderate current 200-600A', 'Slow rise 20-80ms', 'Medium duration 50-200ms', 'HIGH THD 35-60%'],
-                realWorldExample: 'Peak 450A, Rise 35ms, THD 45%'
-            },
-            'vegetation_large': {
-                name: '🌳 Vegetation - Large/Sustained',
-                icon: '🌳',
-                source: 'CIGRE',
-                characteristics: {
-                    peakI: { min: 600, max: 1500, weight: 0.2 },
-                    riseTime: { min: 50, max: 150, weight: 0.15 },
-                    duration: { min: 100, max: 500, weight: 0.2 },
-                    vDip: { min: 60, max: 90, weight: 0.15 },
-                    thd: { min: 40, max: 80, weight: 0.25 },
-                    restriking: { min: 1, max: 5, weight: 0.05 }
-                },
-                keyIndicators: ['Higher current 600-1500A', 'Longer rise 50-150ms', 'Long duration 100-500ms', 'Very high THD 40-80%', 'May have re-ignitions'],
-                realWorldExample: 'Peak 850A, Rise 80ms, Duration 280ms, THD 62%'
-            },
-            '3phase_fault': {
-                name: '🔴 3-Phase Short Circuit',
-                icon: '🔴',
-                source: 'IEEE C37.010',
-                characteristics: {
-                    peakI: { min: 2000, max: 20000, weight: 0.3 },
-                    riseTime: { min: 0.5, max: 20, weight: 0.2 },
-                    duration: { min: 10, max: 150, weight: 0.15 },
-                    vDip: { min: 10, max: 40, weight: 0.15 },
-                    asym: { min: 5, max: 15, weight: 0.2 }
-                },
-                keyIndicators: ['VERY HIGH current 2-20kA', 'Very low asymmetry <15%', 'Balanced phases', 'Deep voltage dip 10-40%'],
-                realWorldExample: 'Peak 8,500A, Asymmetry 3%'
-            },
-            '2phase_fault': {
-                name: '🟠 2-Phase Short Circuit',
-                icon: '🟠',
-                source: 'IEEE C37.010',
-                characteristics: {
-                    peakI: { min: 1500, max: 8000, weight: 0.25 },
-                    riseTime: { min: 1, max: 15, weight: 0.15 },
-                    duration: { min: 20, max: 150, weight: 0.15 },
-                    vDip: { min: 30, max: 70, weight: 0.15 },
-                    asym: { min: 40, max: 70, weight: 0.3 }
-                },
-                keyIndicators: ['High current 1.5-8kA', 'HIGH asymmetry 40-70%', 'Two phases equal, one low', 'Moderate dip 30-70%'],
-                realWorldExample: 'Peak 5,200A, Asymmetry 65%'
-            },
-            '1phase_ground': {
-                name: '🟡 1-Phase Ground Fault',
-                icon: '🟡',
-                source: 'IEEE C37.010',
-                characteristics: {
-                    peakI: { min: 100, max: 2000, weight: 0.2 },
-                    riseTime: { min: 5, max: 100, weight: 0.15 },
-                    duration: { min: 50, max: 500, weight: 0.15 },
-                    vDip: { min: 40, max: 80, weight: 0.15 },
-                    asym: { min: 60, max: 90, weight: 0.25 },
-                    zeroSeq: { min: 0.5, max: 1, weight: 0.1 }
-                },
-                keyIndicators: ['VERY HIGH asymmetry 60-90%', 'One phase very high', 'Two phases low', 'High zero-sequence'],
-                realWorldExample: 'Peak 650A, Asymmetry 76%'
-            },
-            'phase_phase_fault': {
-                name: '🟠 Phase-to-Phase (No Ground)',
-                icon: '🟠',
-                source: 'IEEE C37.010',
-                characteristics: {
-                    peakI: { min: 1200, max: 6000, weight: 0.25 },
-                    riseTime: { min: 2, max: 20, weight: 0.15 },
-                    duration: { min: 30, max: 200, weight: 0.15 },
-                    vDip: { min: 35, max: 70, weight: 0.15 },
-                    asym: { min: 45, max: 75, weight: 0.25 },
-                    zeroSeq: { min: 0, max: 0.2, weight: 0.05 }
-                },
-                keyIndicators: ['Moderate-high current 1.2-6kA', 'HIGH asymmetry 45-75%', 'Two affected phases', 'Very LOW zero-sequence'],
-                realWorldExample: 'Peak 4,800A, Two phases 4.5kA, One phase 1.2kA'
-            },
-            'overload': {
-                name: '📈 Overload Condition',
-                icon: '📈',
-                source: 'IEEE C37.95',
-                characteristics: {
-                    peakI: { min: 150, max: 400, weight: 0.2 },
-                    riseTime: { min: 50, max: 200, weight: 0.15 },
-                    duration: { min: 1000, max: 600000, weight: 0.35 },
-                    vDip: { min: 60, max: 95, weight: 0.15 },
-                    asym: { min: 5, max: 20, weight: 0.1 },
-                    stability: { min: 0, max: 1, weight: 0.05 }
-                },
-                keyIndicators: ['VERY LONG DURATION (minutes+)', 'Minimal voltage dip 60-95%', 'Balanced phases', 'Stable current'],
-                realWorldExample: '250A load, 8% dip, 3 minute duration'
-            },
-            'harmonic_load': {
-                name: '〰️ Harmonic Distortion - Load',
-                icon: '〰️',
-                source: 'IEC 61000-4-7',
-                characteristics: {
-                    peakI: { min: 150, max: 400, weight: 0.1 },
-                    duration: { min: 10000, max: 600000, weight: 0.2 },
-                    thd: { min: 35, max: 65, weight: 0.4 },
-                    vDip: { min: 90, max: 100, weight: 0.15 },
-                    h3: { min: 15, max: 40, weight: 0.1 },
-                    h5: { min: 8, max: 30, weight: 0.05 }
-                },
-                keyIndicators: ['HIGH THD 35-65%', 'Long sustained duration', 'Minimal voltage dip', 'Steady-state distortion', 'Load-dependent'],
-                realWorldExample: 'VFD load: THD 45%, Duration sustained'
-            },
-            'harmonic_converter': {
-                name: '〰️ Harmonic - Power Converter',
-                icon: '〰️',
-                source: 'IEC 61000-4-7',
-                characteristics: {
-                    peakI: { min: 100, max: 300, weight: 0.1 },
-                    duration: { min: 10000, max: 600000, weight: 0.2 },
-                    thd: { min: 50, max: 100, weight: 0.4 },
-                    vDip: { min: 85, max: 100, weight: 0.15 },
-                    h5: { min: 20, max: 50, weight: 0.1 },
-                    h7: { min: 10, max: 40, weight: 0.05 }
-                },
-                keyIndicators: ['VERY HIGH THD 50-100%', 'Characteristic odd harmonics', '5th & 7th dominant', 'No voltage dip', 'Converter signature'],
-                realWorldExample: '6-pulse converter: 5th 35%, 7th 25%, THD 58%'
-            },
-            'transient_overvoltage': {
-                name: '⚡ Transient Overvoltage',
-                icon: '⚡',
-                source: 'IEEE C62.92.1',
-                characteristics: {
-                    peakV: { min: 1.5, max: 3, weight: 0.3 },
-                    duration: { min: 1, max: 100, weight: 0.2 },
-                    riseTime: { min: 0.1, max: 10, weight: 0.2 },
-                    freqContent: { min: 1, max: 50, weight: 0.15 },
-                    peakI: { min: 0, max: 100, weight: 0.15 }
-                },
-                keyIndicators: ['High voltage spike 1.5-3pu', 'Fast rise time', 'Short duration', 'No high current', 'Oscillatory'],
-                realWorldExample: 'Capacitor switching: 2.3pu, Rise 2ms'
-            },
-            'ferroresonance': {
-                name: '〰️ Ferroresonance',
-                icon: '〰️',
-                source: 'CIGRE WG37.43',
-                characteristics: {
-                    peakV: { min: 1.3, max: 2.5, weight: 0.2 },
-                    peakI: { min: 200, max: 1000, weight: 0.2 },
-                    duration: { min: 100, max: 10000, weight: 0.2 },
-                    thd: { min: 40, max: 80, weight: 0.2 },
-                    fundamental: { min: 50, max: 50.5, weight: 0.1 },
-                    subharmonic: { min: 20, max: 30, weight: 0.1 }
-                },
-                keyIndicators: ['High voltage AND high current', 'Very high THD with subharmonic', 'Sustained oscillation', 'Usually 3-phase symmetric'],
-                realWorldExample: 'Unloaded transformer: V 2.1pu, I 650A, THD 65%'
-            },
-            'dc_injection': {
-                name: '⚡ DC Injection/Asymmetry',
-                icon: '⚡',
-                source: 'IEEE 1159',
-                characteristics: {
-                    peakI: { min: 100, max: 500, weight: 0.2 },
-                    dcOffset: { min: 0.1, max: 1, weight: 0.3 },
-                    duration: { min: 10, max: 10000, weight: 0.2 },
-                    asymmetry: { min: 30, max: 100, weight: 0.2 },
-                    waveSymmetry: { min: -50, max: 50, weight: 0.1 }
-                },
-                keyIndicators: ['Waveform DC offset', 'Asymmetric positive/negative', 'Phase imbalance', 'Non-zero center line'],
-                realWorldExample: 'Converter fault: DC offset ±20%, Asymmetry 45%'
-            },
-            'sustained_sag': {
-                name: '📉 Sustained Voltage Sag',
-                icon: '📉',
-                source: 'IEEE 1159',
-                characteristics: {
-                    vDip: { min: 20, max: 90, weight: 0.3 },
-                    duration: { min: 20, max: 600000, weight: 0.3 },
-                    peakI: { min: 50, max: 300, weight: 0.15 },
-                    asym: { min: 5, max: 40, weight: 0.15 },
-                    recovery: { min: 0, max: 1, weight: 0.1 }
-                },
-                keyIndicators: ['Voltage dip 20-90%', 'Duration seconds to minutes', 'Low/moderate current', 'Gradual recovery'],
-                realWorldExample: 'Network fault: V drop to 50%, Current 120A, 5s duration'
-            },
-            'normal': {
-                name: '✓ Normal Operation',
-                icon: '✓',
-                source: 'IEC 61000-4-28',
-                characteristics: {
-                    peakI: { min: 50, max: 150, weight: 0.2 },
-                    vDip: { min: 95, max: 105, weight: 0.3 },
-                    asym: { min: 0, max: 5, weight: 0.2 },
-                    thd: { min: 0, max: 15, weight: 0.2 },
-                    freq: { min: 49.5, max: 50.5, weight: 0.1 }
-                },
-                keyIndicators: ['Voltage 95-105% nominal', 'Low current (rated ±20%)', 'Perfect balance <5%', 'Low THD <15%'],
-                realWorldExample: 'Steady state: 100A, 87.5kV, THD 5%'
-            }
+            'lightning_direct': { name: '⚡ Lightning-Direct', icon: '⚡', source: 'IEEE C62.92.2', characteristics: { peakI: {min:5000,max:200000,w:0.25}, riseTime: {min:0.0005,max:0.005,w:0.3}, duration: {min:0.05,max:0.5,w:0.15}, vDip: {min:0,max:20,w:0.15}, freqContent: {min:10,max:100,w:0.15} }, keyIndicators: ['Extreme current', 'Ultra-fast rise'] },
+            'lightning_indirect': { name: '⚡ Lightning-Indirect', icon: '⚡', source: 'IEEE C62.92.2', characteristics: { peakI: {min:1000,max:5000,w:0.2}, riseTime: {min:0.005,max:0.01,w:0.25}, duration: {min:0.1,max:2,w:0.15}, vDip: {min:10,max:30,w:0.2}, asym: {min:30,max:80,w:0.2} }, keyIndicators: ['High current', 'Fast rise'] },
+            'vegetation_small': { name: '🌳 Vegetation-Small', icon: '🌳', source: 'CIGRE', characteristics: { peakI: {min:200,max:600,w:0.2}, riseTime: {min:20,max:80,w:0.15}, duration: {min:50,max:200,w:0.15}, vDip: {min:50,max:75,w:0.15}, thd: {min:35,max:60,w:0.25} }, keyIndicators: ['Slow rise', 'High THD'] },
+            'vegetation_large': { name: '🌳 Vegetation-Large', icon: '🌳', source: 'CIGRE', characteristics: { peakI: {min:600,max:1500,w:0.2}, riseTime: {min:50,max:150,w:0.15}, duration: {min:100,max:500,w:0.2}, vDip: {min:60,max:90,w:0.15}, thd: {min:40,max:80,w:0.25} }, keyIndicators: ['Long duration', 'Very high THD'] },
+            '3phase_fault': { name: '🔴 3-Phase SC', icon: '🔴', source: 'IEEE C37.010', characteristics: { peakI: {min:2000,max:20000,w:0.3}, riseTime: {min:0.5,max:20,w:0.2}, duration: {min:10,max:150,w:0.15}, vDip: {min:10,max:40,w:0.15}, asym: {min:5,max:15,w:0.2} }, keyIndicators: ['Balanced', 'Deep dip'] },
+            '2phase_fault': { name: '🟠 2-Phase SC', icon: '🟠', source: 'IEEE C37.010', characteristics: { peakI: {min:1500,max:8000,w:0.25}, riseTime: {min:1,max:15,w:0.15}, duration: {min:20,max:150,w:0.15}, vDip: {min:30,max:70,w:0.15}, asym: {min:40,max:70,w:0.3} }, keyIndicators: ['High asymmetry', '2-phase'] },
+            '1phase_fault': { name: '🟡 1-Phase GF', icon: '🟡', source: 'IEEE C37.010', characteristics: { peakI: {min:100,max:2000,w:0.2}, riseTime: {min:5,max:100,w:0.15}, duration: {min:50,max:500,w:0.15}, vDip: {min:40,max:80,w:0.15}, asym: {min:60,max:90,w:0.25} }, keyIndicators: ['Very high asymmetry', 'Ground fault'] },
+            'phase_phase_fault': { name: '🟠 Phase-Phase', icon: '🟠', source: 'IEEE C37.010', characteristics: { peakI: {min:1200,max:6000,w:0.25}, riseTime: {min:2,max:20,w:0.15}, duration: {min:30,max:200,w:0.15}, vDip: {min:35,max:70,w:0.15}, asym: {min:45,max:75,w:0.25} }, keyIndicators: ['Phase-to-phase', 'Low zero-seq'] },
+            'overload': { name: '📈 Overload', icon: '📈', source: 'IEEE C37.95', characteristics: { peakI: {min:150,max:400,w:0.2}, riseTime: {min:50,max:200,w:0.15}, duration: {min:1000,max:600000,w:0.35}, vDip: {min:60,max:95,w:0.15}, asym: {min:5,max:20,w:0.1} }, keyIndicators: ['Very long duration', 'Minimal dip'] },
+            'harmonic_load': { name: '〰️ Harmonic-Load', icon: '〰️', source: 'IEC 61000-4-7', characteristics: { peakI: {min:150,max:400,w:0.1}, duration: {min:10000,max:600000,w:0.2}, thd: {min:35,max:65,w:0.4}, vDip: {min:90,max:100,w:0.15} }, keyIndicators: ['Load harmonics', 'Long duration'] },
+            'harmonic_converter': { name: '〰️ Harmonic-Conv', icon: '〰️', source: 'IEC 61000-4-7', characteristics: { peakI: {min:100,max:300,w:0.1}, duration: {min:10000,max:600000,w:0.2}, thd: {min:50,max:100,w:0.4}, vDip: {min:85,max:100,w:0.15} }, keyIndicators: ['5th/7th harmonics', 'Converter'] },
+            'transient_overvolt': { name: '⚡ Transient OV', icon: '⚡', source: 'IEEE C62.92.1', characteristics: { peakV: {min:1.5,max:3,w:0.3}, duration: {min:1,max:100,w:0.2}, riseTime: {min:0.1,max:10,w:0.2} }, keyIndicators: ['Voltage spike', 'No high current'] },
+            'ferroresonance': { name: '〰️ Ferroresonance', icon: '〰️', source: 'CIGRE WG37.43', characteristics: { peakV: {min:1.3,max:2.5,w:0.2}, peakI: {min:200,max:1000,w:0.2}, duration: {min:100,max:10000,w:0.2}, thd: {min:40,max:80,w:0.2} }, keyIndicators: ['High V&I', 'Subharmonic'] },
+            'dc_injection': { name: '⚡ DC Injection', icon: '⚡', source: 'IEEE 1159', characteristics: { peakI: {min:100,max:500,w:0.2}, duration: {min:10,max:10000,w:0.2}, asym: {min:30,max:100,w:0.2} }, keyIndicators: ['DC offset', 'Asymmetric'] },
+            'sustained_sag': { name: '📉 Voltage Sag', icon: '📉', source: 'IEEE 1159', characteristics: { vDip: {min:20,max:90,w:0.3}, duration: {min:20,max:600000,w:0.3}, peakI: {min:50,max:300,w:0.15} }, keyIndicators: ['Voltage sag', 'Sustained'] },
+            'normal': { name: '✓ Normal', icon: '✓', source: 'IEC 61000-4-28', characteristics: { peakI: {min:50,max:150,w:0.2}, vDip: {min:95,max:105,w:0.3}, asym: {min:0,max:5,w:0.2}, thd: {min:0,max:15,w:0.2} }, keyIndicators: ['Steady state', 'Balanced'] }
         };
 
         let allData = [];
         let faultMetrics = null;
-        let zoomLevel = 1;
-        let panOffset = 0;
+        let zoomLevel = { volt: 1, curr: 1 };
         let maxDuration = 0;
         let vScale = 11.889732;
         let iScale = 2.762230;
+        let ctRatio = 1000/5;
+        let ptRatio = 275000/110;
+        let viewMode = 'secondary';
         let charts = {};
+        let smoothAnimReq = null;
         
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -742,9 +652,9 @@
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', e => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
         
-        function showLoading(message) {
+        function showLoading(msg) {
             document.getElementById('loadingOverlay').classList.add('active');
-            document.getElementById('loadingMessage').textContent = message;
+            document.getElementById('loadingMessage').textContent = msg;
         }
         
         function hideLoading() {
@@ -755,9 +665,7 @@
             if (!file.name.toLowerCase().endsWith('.dat')) { alert('Only .DAT files'); return; }
             showLoading('Reading file...');
             const reader = new FileReader();
-            reader.onload = e => {
-                setTimeout(() => parseDAT(e.target.result, file.name), 100);
-            };
+            reader.onload = e => setTimeout(() => parseDAT(e.target.result, file.name), 100);
             reader.readAsText(file);
         }
         
@@ -765,7 +673,7 @@
             showLoading('Parsing samples...');
             setTimeout(() => {
                 document.getElementById('fileInfo').classList.add('active');
-                document.getElementById('ctptConfig').classList.add('active');
+                document.getElementById('controlsSection').style.display = 'flex';
                 document.getElementById('fileName').textContent = filename;
                 
                 const lines = content.trim().split('\n');
@@ -802,25 +710,34 @@
                     hideLoading();
                     document.getElementById('tabsContainer').style.display = 'flex';
                     document.getElementById('content').style.display = 'grid';
-                    updateTime();
+                    updateTimeSmooth();
                 }, 100);
             }, 50);
         }
         
-        function updateCTPT() {
-            vScale = parseFloat(document.getElementById('vScale').value) || 11.889732;
-            iScale = parseFloat(document.getElementById('iScale').value) || 2.762230;
+        function updateScales() {
+            vScale = 11.889732;
+            iScale = 2.762230;
             if (allData.length > 0) {
                 analyze();
-                updateTime();
+                updateTimeSmooth();
             }
+        }
+        
+        function setView(mode) {
+            viewMode = mode;
+            document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('voltageTitle').textContent = mode === 'primary' ? '⚡ Voltage (Primary)' : '⚡ Voltage (Secondary)';
+            document.getElementById('currentTitle').textContent = mode === 'primary' ? '📈 Current (Primary)' : '📈 Current (Secondary)';
+            updateTimeSmooth();
         }
         
         function analyze() {
             faultMetrics = calculateMetrics();
             const fault = classifyFault(faultMetrics);
             displayConclusion(fault);
-            displayRanked(fault);
+            displayAllRankedFaults(fault);
         }
         
         function calculateMetrics() {
@@ -831,7 +748,7 @@
                 if (curr < 100 && distStart !== -1) { distEnd = i; break; }
             }
             
-            if (distStart === -1) return { peakI: 0, vDip: 100, riseTime: 0, duration: 0, thd: 0, asym: 0 };
+            if (distStart === -1) return { peakI: 0, peakV: 0, vDip: 100, riseTime: 0, duration: 0, thd: 0, asym: 0 };
             
             if (distEnd === -1) distEnd = allData.length - 1;
             const dist = allData.slice(distStart, distEnd);
@@ -887,13 +804,13 @@
                 let score = 0;
                 const chars = faultDef.characteristics;
                 
-                if (chars.peakI && metrics.peakI >= chars.peakI.min && metrics.peakI <= chars.peakI.max) score += chars.peakI.weight * 100;
-                if (chars.peakV && metrics.peakV >= chars.peakV.min && metrics.peakV <= chars.peakV.max) score += chars.peakV.weight * 100;
-                if (chars.riseTime && metrics.riseTime >= chars.riseTime.min && metrics.riseTime <= chars.riseTime.max) score += chars.riseTime.weight * 100;
-                if (chars.duration && metrics.duration >= chars.duration.min && metrics.duration <= chars.duration.max) score += chars.duration.weight * 100;
-                if (chars.vDip && metrics.vDip >= chars.vDip.min && metrics.vDip <= chars.vDip.max) score += chars.vDip.weight * 100;
-                if (chars.thd && metrics.thd >= chars.thd.min && metrics.thd <= chars.thd.max) score += chars.thd.weight * 100;
-                if (chars.asym && metrics.asym >= chars.asym.min && metrics.asym <= chars.asym.max) score += chars.asym.weight * 100;
+                if (chars.peakI && metrics.peakI >= chars.peakI.min && metrics.peakI <= chars.peakI.max) score += chars.peakI.w * 100;
+                if (chars.peakV && metrics.peakV >= chars.peakV.min && metrics.peakV <= chars.peakV.max) score += chars.peakV.w * 100;
+                if (chars.riseTime && metrics.riseTime >= chars.riseTime.min && metrics.riseTime <= chars.riseTime.max) score += chars.riseTime.w * 100;
+                if (chars.duration && metrics.duration >= chars.duration.min && metrics.duration <= chars.duration.max) score += chars.duration.w * 100;
+                if (chars.vDip && metrics.vDip >= chars.vDip.min && metrics.vDip <= chars.vDip.max) score += chars.vDip.w * 100;
+                if (chars.thd && metrics.thd >= chars.thd.min && metrics.thd <= chars.thd.max) score += chars.thd.w * 100;
+                if (chars.asym && metrics.asym >= chars.asym.min && metrics.asym <= chars.asym.max) score += chars.asym.w * 100;
                 
                 scores[type] = score;
             }
@@ -907,56 +824,51 @@
         
         function displayConclusion(fault) {
             const time = fault.metrics.distStartTime;
-            const timeMin = Math.floor(time / 60);
-            const timeSec = (time % 60).toFixed(2);
-            
-            let confClass = 'background: #c8e6c9; color: #2e7d32;';
-            if (fault.score < 50) confClass = 'background: #f8d7da; color: #721c24;';
-            else if (fault.score < 70) confClass = 'background: #fff3cd; color: #856404;';
+            const confClass = fault.score > 70 ? '#c8e6c9;color:#2e7d32' : fault.score > 50 ? '#fff3cd;color:#856404' : '#f8d7da;color:#721c24';
             
             let html = `<div class="conclusion-title">${fault.primary.icon} ${fault.primary.name}</div>
                 <div class="conclusion-detail">
-                    <strong>Gangguan:</strong> ${fault.primary.name}<br>
-                    <strong>Waktu:</strong> ${time.toFixed(3)}s (${timeMin}:${timeSec})<br>
-                    <strong>Confidence:</strong> ${Math.round(fault.score)}%<br>
-                    <strong>Sumber:</strong> ${fault.primary.source}
+                    <strong>Fault:</strong> ${fault.primary.name}<br>
+                    <strong>Time:</strong> ${time.toFixed(3)}s | <strong>Source:</strong> ${fault.primary.source}<br>
+                    <strong>Confidence:</strong> ${Math.round(fault.score)}%
                 </div>
                 <div class="conclusion-detail">
-                    <strong>Karakteristik Terukur:</strong><br>
-                    • I Peak: ${fault.metrics.peakI.toFixed(0)}A | V Peak: ${fault.metrics.peakV.toFixed(1)}kV<br>
-                    • V Dip: ${(100-fault.metrics.vDip).toFixed(1)}% | Rise: ${fault.metrics.riseTime.toFixed(2)}ms<br>
-                    • Duration: ${fault.metrics.duration.toFixed(0)}ms | THD: ${fault.metrics.thd.toFixed(1)}% | Asym: ${fault.metrics.asym.toFixed(1)}%
+                    <strong>Measured:</strong><br>
+                    I Peak: ${fault.metrics.peakI.toFixed(0)}A | V Peak: ${fault.metrics.peakV.toFixed(1)}kV<br>
+                    V Dip: ${(100-fault.metrics.vDip).toFixed(1)}% | Rise: ${fault.metrics.riseTime.toFixed(2)}ms<br>
+                    Duration: ${fault.metrics.duration.toFixed(0)}ms | THD: ${fault.metrics.thd.toFixed(1)}%
                 </div>`;
             
             document.getElementById('conclusion').innerHTML = html;
-            document.getElementById('primaryFault').textContent = fault.primary.icon + ' ' + fault.primary.name.split(' - ')[0];
-            document.getElementById('confidenceBadge').innerHTML = `<span style="${confClass} padding: 3px 6px; border-radius: 10px; font-weight: 600; font-size: 8px;">${Math.round(fault.score)}%</span>`;
+            document.getElementById('primaryFault').textContent = fault.primary.icon + ' ' + fault.primary.name;
+            document.getElementById('confidenceBadge').innerHTML = `<span style="background:${confClass};padding:3px 6px;border-radius:10px;font-weight:600;font-size:8px;">${Math.round(fault.score)}%</span>`;
         }
         
-        function displayRanked(fault) {
+        function displayAllRankedFaults(fault) {
             let html = '';
-            fault.ranked.slice(0, 6).forEach((item, idx) => {
+            fault.ranked.forEach((item, idx) => {
                 const faultDef = FAULT_DATABASE[item[0]];
                 const score = Math.round(item[1] * 0.8);
-                html += `<div class="fault-item" onclick="alert('${faultDef.name}\\n${faultDef.source}\\n${faultDef.realWorldExample}')">
+                const isPrimary = idx === 0;
+                html += `<div class="fault-item ${isPrimary ? 'primary' : ''}">
                     <div class="fault-rank">#${idx+1}</div>
-                    <div class="fault-name">${faultDef.icon} ${faultDef.name.split(' - ')[0]}</div>
+                    <div class="fault-name">${faultDef.icon} ${faultDef.name}</div>
                     <div class="fault-score">${score}%</div>
                 </div>`;
             });
             document.getElementById('faultList').innerHTML = html;
         }
         
-        function updateTime() {
+        function updateTimeSmooth() {
             if (allData.length === 0) return;
             
-            const timeP = parseFloat(document.getElementById('timeRange').value);
-            const startTime = (timeP / 100) * maxDuration;
-            const windowDuration = maxDuration * (0.05 / zoomLevel);
+            const sliderVal = parseFloat(document.getElementById('timeSlider').value) / 10000;
+            const startTime = sliderVal * maxDuration;
+            const windowDuration = Math.max(0.01, maxDuration * 0.05 / (zoomLevel.volt || 1));
             const endTime = Math.min(startTime + windowDuration, maxDuration);
             
-            document.getElementById('timeStart').textContent = startTime.toFixed(2) + 's';
-            document.getElementById('timeDuration').textContent = (endTime - startTime).toFixed(2) + 's';
+            document.getElementById('timeStartDisplay').textContent = startTime.toFixed(2) + 's';
+            document.getElementById('timeDurationDisplay').textContent = (endTime - startTime).toFixed(2) + 's';
             
             const filtered = allData.filter(d => d.t / 1e6 >= startTime && d.t / 1e6 <= endTime);
             if (filtered.length === 0) return;
@@ -973,6 +885,145 @@
             document.getElementById('thd').textContent = calculateTHD(filtered).toFixed(1);
             
             updateCharts(filtered, startTime, endTime);
+            updateDigitalSignals(filtered, startTime);
+            updatePhasors(filtered);
+        }
+        
+        function updateDigitalSignals(data, startTime) {
+            const digitalLabels = ['Any Trip', 'Z1', 'Z2', 'Z3', 'CB-A', 'CB-B', 'CB-C', 'Phase', 'A-Send', 'A-Recv', 'SOTF', 'TOR', 'Auto', 'Lock', 'ARIP', 'CB-Bad', 'Sync', 'VT-Fail', 'Spare-1', 'Spare-2', 'Spare-3', 'Spare-2', 'Spare-23', 'Spare-24', 'Spare-25', 'Spare-26', 'Spare-27', 'Spare-28', 'Spare-29', 'Spare-30', 'Spare-31', 'Spare-32'];
+            
+            let digitalStates = Array(32).fill(0);
+            data.forEach(d => {
+                d.digital.forEach((val, idx) => {
+                    if (val === 1) digitalStates[idx] = 1;
+                });
+            });
+            
+            let html = '';
+            digitalStates.forEach((state, idx) => {
+                if (idx < 18) {
+                    html += `<div class="digital-item ${state ? 'active' : ''}">
+                        <div class="digital-label">${idx}</div>
+                        <div class="digital-value">${digitalLabels[idx] || 'N/A'} ${state ? '✓' : ''}</div>
+                    </div>`;
+                }
+            });
+            document.getElementById('digitalGrid').innerHTML = html;
+        }
+        
+        function updateCharts(filtered, startTime, endTime) {
+            const labels = filtered.map((d, i) => i % Math.max(1, Math.floor(filtered.length / 15)) === 0 ? (d.t / 1e6).toFixed(3) : '');
+            
+            const vData = [
+                { label: 'VA', data: filtered.map(d => d.va * vScale / 1000), borderColor: '#667eea', borderWidth: 1, pointRadius: 0, tension: 0.05, fill: false },
+                { label: 'VB', data: filtered.map(d => d.vb * vScale / 1000), borderColor: '#ed64a6', borderWidth: 1, pointRadius: 0, tension: 0.05, fill: false },
+                { label: 'VC', data: filtered.map(d => d.vc * vScale / 1000), borderColor: '#ff9a42', borderWidth: 1, pointRadius: 0, tension: 0.05, fill: false }
+            ];
+            
+            if (!charts.volt) {
+                charts.volt = new Chart(document.getElementById('voltageChart'), {
+                    type: 'line', data: { labels, datasets: vData },
+                    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: true, labels: { font: { size: 8 } } } }, scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 7 } } }, y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 7 } } } } }
+                });
+            } else {
+                charts.volt.data.labels = labels;
+                charts.volt.data.datasets = vData;
+                charts.volt.update('none');
+            }
+            
+            const iData = [
+                { label: 'IA', data: filtered.map(d => d.ia * iScale), borderColor: '#667eea', borderWidth: 1, pointRadius: 0, tension: 0.05, fill: false },
+                { label: 'IB', data: filtered.map(d => d.ib * iScale), borderColor: '#ed64a6', borderWidth: 1, pointRadius: 0, tension: 0.05, fill: false },
+                { label: 'IC', data: filtered.map(d => d.ic * iScale), borderColor: '#ff9a42', borderWidth: 1, pointRadius: 0, tension: 0.05, fill: false },
+                { label: 'IN', data: filtered.map(d => d.in * iScale), borderColor: '#4caf50', borderWidth: 1, pointRadius: 0, tension: 0.05, fill: false, borderDash: [3,3] }
+            ];
+            
+            if (!charts.curr) {
+                charts.curr = new Chart(document.getElementById('currentChart'), {
+                    type: 'line', data: { labels, datasets: iData },
+                    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: true, labels: { font: { size: 8 } } } }, scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 7 } } }, y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 7 } } } } }
+                });
+            } else {
+                charts.curr.data.labels = labels;
+                charts.curr.data.datasets = iData;
+                charts.curr.update('none');
+            }
+        }
+        
+        function updatePhasors(data) {
+            if (data.length < 50) return;
+            
+            const va = data.map(d => d.va * vScale / 1000);
+            const vb = data.map(d => d.vb * vScale / 1000);
+            const vc = data.map(d => d.vc * vScale / 1000);
+            const ia = data.map(d => d.ia * iScale);
+            const ib = data.map(d => d.ib * iScale);
+            const ic = data.map(d => d.ic * iScale);
+            
+            const calcPhasor = (phase) => {
+                let re = 0, im = 0;
+                for (let i = 0; i < phase.length; i++) {
+                    const angle = (i / phase.length) * 2 * Math.PI;
+                    re += phase[i] * Math.cos(angle);
+                    im += phase[i] * Math.sin(angle);
+                }
+                return { mag: Math.sqrt(re*re + im*im) / phase.length, angle: Math.atan2(im, re) * 180 / Math.PI };
+            };
+            
+            const vPhasors = [calcPhasor(va), calcPhasor(vb), calcPhasor(vc)];
+            const iPhasors = [calcPhasor(ia), calcPhasor(ib), calcPhasor(ic)];
+            
+            drawPhasorDiagram('phasorVoltageChart', vPhasors, ['VA', 'VB', 'VC'], '#667eea', '#ed64a6', '#ff9a42');
+            drawPhasorDiagram('phasorCurrentChart', iPhasors, ['IA', 'IB', 'IC'], '#667eea', '#ed64a6', '#ff9a42');
+        }
+        
+        function drawPhasorDiagram(canvasId, phasors, labels, c1, c2, c3) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const size = Math.min(canvas.width, canvas.height);
+            const center = size / 2;
+            const scale = (size / 2 - 20) / (Math.max(...phasors.map(p => p.mag)) || 1);
+            
+            ctx.clearRect(0, 0, size, size);
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 0.5;
+            
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * 30) * Math.PI / 180;
+                const x2 = center + (size / 2 - 20) * Math.cos(angle);
+                const y2 = center + (size / 2 - 20) * Math.sin(angle);
+                ctx.beginPath();
+                ctx.moveTo(center, center);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            
+            ctx.beginPath();
+            ctx.arc(center, center, size / 2 - 20, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            const colors = [c1, c2, c3];
+            phasors.forEach((phasor, idx) => {
+                const angle = phasor.angle * Math.PI / 180;
+                const x = center + phasor.mag * scale * Math.cos(angle);
+                const y = center - phasor.mag * scale * Math.sin(angle);
+                
+                ctx.strokeStyle = colors[idx];
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(center, center);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                
+                ctx.fillStyle = colors[idx];
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.fillStyle = colors[idx];
+                ctx.font = 'bold 11px Arial';
+                ctx.fillText(labels[idx] + '(' + phasor.mag.toFixed(0) + ')', x + 5, y - 5);
+            });
         }
         
         function calculateAsymmetry(data) {
@@ -994,105 +1045,17 @@
             return Math.min(100, (Math.sqrt(variance / currents.length) / (mean || 1)) * 100);
         }
         
-        function updateCharts(filtered, startTime, endTime) {
-            const labels = filtered.map((d, i) => i % Math.floor(filtered.length / 10) === 0 ? (d.t / 1e6).toFixed(3) : '');
-            
-            const vDataset = [
-                { label: 'VA', data: filtered.map(d => d.va * vScale / 1000), borderColor: '#667eea', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
-                { label: 'VB', data: filtered.map(d => d.vb * vScale / 1000), borderColor: '#ed64a6', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
-                { label: 'VC', data: filtered.map(d => d.vc * vScale / 1000), borderColor: '#ff9a42', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false }
-            ];
-            
-            if (!charts.volt) {
-                charts.volt = new Chart(document.getElementById('voltageChart'), {
-                    type: 'line',
-                    data: { labels, datasets: vDataset },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: false,
-                        plugins: {
-                            legend: { display: true, labels: { font: { size: 9 } } },
-                            filler: { propagate: true }
-                        },
-                        scales: {
-                            x: { grid: { drawBorder: false, color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } },
-                            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } }
-                        }
-                    }
-                });
-            } else {
-                charts.volt.data.labels = labels;
-                charts.volt.data.datasets = vDataset;
-                charts.volt.update('none');
-            }
-            
-            const iDataset = [
-                { label: 'IA', data: filtered.map(d => d.ia * iScale), borderColor: '#667eea', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
-                { label: 'IB', data: filtered.map(d => d.ib * iScale), borderColor: '#ed64a6', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
-                { label: 'IC', data: filtered.map(d => d.ic * iScale), borderColor: '#ff9a42', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
-                { label: 'IN', data: filtered.map(d => d.in * iScale), borderColor: '#4caf50', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false, borderDash: [3,3] }
-            ];
-            
-            if (!charts.curr) {
-                charts.curr = new Chart(document.getElementById('currentChart'), {
-                    type: 'line',
-                    data: { labels, datasets: iDataset },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: false,
-                        plugins: {
-                            legend: { display: true, labels: { font: { size: 9 } } },
-                            filler: { propagate: true }
-                        },
-                        scales: {
-                            x: { grid: { drawBorder: false, color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } },
-                            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } }
-                        }
-                    }
-                });
-            } else {
-                charts.curr.data.labels = labels;
-                charts.curr.data.datasets = iDataset;
-                charts.curr.update('none');
-            }
-        }
-        
-        function zoomIn() {
-            if (zoomLevel < 10) { zoomLevel *= 1.5; updateTime(); }
-        }
-        
-        function zoomOut() {
-            if (zoomLevel > 1) { zoomLevel /= 1.5; updateTime(); }
-        }
-        
-        function resetZoom() {
-            zoomLevel = 1;
-            document.getElementById('timeRange').value = 0;
-            updateTime();
-        }
-        
-        function panLeft() {
-            let val = parseFloat(document.getElementById('timeRange').value);
-            document.getElementById('timeRange').value = Math.max(0, val - 5);
-            updateTime();
-        }
-        
-        function panRight() {
-            let val = parseFloat(document.getElementById('timeRange').value);
-            document.getElementById('timeRange').value = Math.min(100, val + 5);
-            updateTime();
-        }
+        function zoomInVolt() { if (zoomLevel.volt < 5) { zoomLevel.volt *= 1.3; updateTimeSmooth(); } }
+        function zoomOutVolt() { if (zoomLevel.volt > 1) { zoomLevel.volt /= 1.3; updateTimeSmooth(); } }
+        function zoomInCurr() { if (zoomLevel.curr < 5) { zoomLevel.curr *= 1.3; updateTimeSmooth(); } }
+        function zoomOutCurr() { if (zoomLevel.curr > 1) { zoomLevel.curr /= 1.3; updateTimeSmooth(); } }
         
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
             event.target.classList.add('active');
-            setTimeout(() => {
-                if (tab === 'waveform') updateTime();
-            }, 100);
+            setTimeout(() => updateTimeSmooth(), 100);
         }
     </script>
 </body>
