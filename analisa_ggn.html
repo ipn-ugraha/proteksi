@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relay Fault Analyzer - Integrated with Reference DB</title>
+    <title>Relay Fault Analyzer Pro v2 - Enhanced</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,7 +13,7 @@
             min-height: 100vh;
             padding: 15px;
         }
-        .container { max-width: 2400px; margin: 0 auto; }
+        .container { max-width: 2600px; margin: 0 auto; }
         
         .header {
             background: white;
@@ -50,6 +50,56 @@
         .file-input { display: none; }
         .btn-browse { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap; }
         .btn-browse:hover { background: #764ba2; }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .loading-overlay.active { display: flex; }
+        
+        .loading-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .loading-subtext {
+            color: #999;
+            font-size: 12px;
+        }
         
         .file-info { background: white; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 11px; color: #666; display: none; }
         .file-info.active { display: block; }
@@ -93,7 +143,7 @@
         
         .content {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 300px;
+            grid-template-columns: 1fr 280px;
             gap: 0;
             background: white;
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
@@ -101,13 +151,53 @@
         }
         
         .main { padding: 15px; }
-        .chart-box {
+        
+        .waveform-container {
             background: #f8f9fa;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid #e0e0e0;
-            padding: 8px;
-            height: 250px;
+            padding: 10px;
             margin-bottom: 10px;
+        }
+        
+        .waveform-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+        
+        .waveform-title {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .waveform-controls {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .waveform-btn {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .waveform-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .chart-box {
+            position: relative;
+            height: 400px;
+            width: 100%;
         }
         
         .sidebar {
@@ -125,91 +215,28 @@
             background: linear-gradient(135deg, #e8eef7 0%, #f0e6ff 100%);
             border: 2px solid #667eea;
             border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 12px;
+            margin-bottom: 12px;
         }
         
         .conclusion-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: #667eea;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         
         .conclusion-detail {
             background: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 4px;
-            margin-bottom: 8px;
-            font-size: 10px;
-            line-height: 1.5;
+            margin-bottom: 6px;
+            font-size: 9px;
+            line-height: 1.4;
             border-left: 3px solid #667eea;
         }
         
-        .reference-section {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 9px;
-        }
-        
-        .reference-title {
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 6px;
-            font-size: 10px;
-        }
-        
-        .reference-item {
-            background: #f8f9fa;
-            padding: 6px;
-            margin-bottom: 4px;
-            border-radius: 3px;
-            border-left: 2px solid #667eea;
-        }
-        
-        .reference-label { font-weight: 600; color: #333; }
-        .reference-value { color: #666; }
-        
-        .comparison-table {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 8px;
-            margin-bottom: 10px;
-        }
-        
-        .table-title {
-            font-weight: 600;
-            color: #667eea;
-            font-size: 10px;
-            margin-bottom: 6px;
-        }
-        
-        .table-row {
-            display: grid;
-            grid-template-columns: 40px 1fr 1fr;
-            gap: 6px;
-            padding: 4px;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 8px;
-            align-items: center;
-        }
-        
-        .table-row:last-child { border-bottom: none; }
-        .table-row.header {
-            background: #f0e6ff;
-            font-weight: 600;
-            color: #667eea;
-        }
-        
-        .icon { text-align: center; }
-        .param { text-align: right; }
-        .range { color: #666; }
-        
-        .group { margin-bottom: 12px; }
+        .group { margin-bottom: 10px; }
         .group-title { font-weight: 600; font-size: 10px; color: #667eea; text-transform: uppercase; margin-bottom: 6px; }
         
         button {
@@ -249,7 +276,7 @@
             background: white;
             padding: 5px;
             border-radius: 3px;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             color: #667eea;
             text-align: center;
@@ -262,59 +289,54 @@
             background: white;
             padding: 6px;
             border-radius: 3px;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             border-left: 2px solid #667eea;
-            font-size: 9px;
+            font-size: 8px;
         }
         
-        .stat-label { color: #999; margin-bottom: 1px; font-size: 8px; }
-        .stat-value { font-weight: 600; color: #667eea; font-size: 10px; font-family: monospace; }
+        .stat-label { color: #999; margin-bottom: 1px; font-size: 7px; }
+        .stat-value { font-weight: 600; color: #667eea; font-size: 9px; font-family: monospace; }
         
-        .decision-tree {
+        .fault-list {
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
             padding: 8px;
-            margin-bottom: 10px;
             font-size: 8px;
-            font-family: monospace;
-            color: #666;
             max-height: 300px;
             overflow-y: auto;
         }
         
-        .decision-tree-title {
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 6px;
-            font-size: 9px;
+        .fault-item {
+            padding: 4px;
+            margin-bottom: 3px;
+            background: #f8f9fa;
+            border-left: 2px solid #667eea;
+            cursor: pointer;
         }
         
-        .confidence-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 9px;
-            margin-top: 4px;
+        .fault-item:hover {
+            background: #e8eef7;
         }
         
-        .confidence-high { background: #c8e6c9; color: #2e7d32; }
-        .confidence-medium { background: #fff3cd; color: #856404; }
-        .confidence-low { background: #f8d7da; color: #721c24; }
-        
-        .waveform-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+        .fault-rank { font-weight: 600; color: #667eea; }
+        .fault-name { color: #333; }
+        .fault-score { float: right; color: #666; }
     </style>
 </head>
 <body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <div class="loading-text">Processing Data...</div>
+            <div class="loading-subtext" id="loadingMessage">Parsing samples...</div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
-            <h1>⚡ Relay Fault Analyzer - Integrated Reference Database</h1>
-            <p>Time-Synchronized Analysis | Fingerprint Database Reference | IEEE/IEC Standards | CT/PT Configurable</p>
+            <h1>⚡ Relay Fault Analyzer Pro v2 - Enhanced Edition</h1>
+            <p>Large Waveform Display | Pan/Zoom Flexible | Loading Indicator | Extended Fault Types | Optimized Performance</p>
         </div>
         
         <div class="upload-section">
@@ -341,78 +363,92 @@
                 <input type="text" id="ptRatio" class="ct-pt-input" value="275000/110" onchange="updateCTPT()">
             </div>
             <div class="ct-pt-item">
-                <div class="ct-pt-label">V Scale (V/unit)</div>
+                <div class="ct-pt-label">V Scale</div>
                 <input type="number" id="vScale" class="ct-pt-input" value="11.889732" step="0.001" onchange="updateCTPT()">
             </div>
             <div class="ct-pt-item">
-                <div class="ct-pt-label">I Scale (A/unit)</div>
+                <div class="ct-pt-label">I Scale</div>
                 <input type="number" id="iScale" class="ct-pt-input" value="2.762230" step="0.001" onchange="updateCTPT()">
             </div>
         </div>
         
         <div class="tabs" id="tabsContainer" style="display: none;">
-            <button class="tab-btn active" onclick="switchTab('analysis')">📊 Analysis</button>
-            <button class="tab-btn" onclick="switchTab('waveform')">📈 Waveform</button>
-            <button class="tab-btn" onclick="switchTab('reference')">📚 Reference DB</button>
-            <button class="tab-btn" onclick="switchTab('comparison')">📋 Comparison</button>
+            <button class="tab-btn active" onclick="switchTab('waveform')">📈 Waveform</button>
+            <button class="tab-btn" onclick="switchTab('analysis')">📊 Analysis</button>
+            <button class="tab-btn" onclick="switchTab('reference')">📚 Reference</button>
         </div>
         
         <div class="content" id="content" style="display: none;">
+            <!-- WAVEFORM TAB (FULL WIDTH) -->
+            <div id="waveform" class="tab-content active" style="grid-column: 1/-1; padding: 15px;">
+                <div class="waveform-container">
+                    <div class="waveform-header">
+                        <div class="waveform-title">⚡ Voltage (VA, VB, VC)</div>
+                        <div class="waveform-controls">
+                            <button class="waveform-btn" onclick="zoomIn()">🔍+</button>
+                            <button class="waveform-btn" onclick="zoomOut()">🔍-</button>
+                            <button class="waveform-btn" onclick="resetZoom()">Reset</button>
+                            <button class="waveform-btn" onclick="panLeft()">◄</button>
+                            <button class="waveform-btn" onclick="panRight()">►</button>
+                        </div>
+                    </div>
+                    <div class="chart-box"><canvas id="voltageChart"></canvas></div>
+                </div>
+                
+                <div class="waveform-container">
+                    <div class="waveform-header">
+                        <div class="waveform-title">📈 Current (IA, IB, IC, IN)</div>
+                        <div class="waveform-controls">
+                            <button class="waveform-btn" onclick="zoomIn()">🔍+</button>
+                            <button class="waveform-btn" onclick="zoomOut()">🔍-</button>
+                            <button class="waveform-btn" onclick="resetZoom()">Reset</button>
+                            <button class="waveform-btn" onclick="panLeft()">◄</button>
+                            <button class="waveform-btn" onclick="panRight()">►</button>
+                        </div>
+                    </div>
+                    <div class="chart-box"><canvas id="currentChart"></canvas></div>
+                </div>
+                
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <div style="font-weight: 600; font-size: 10px; margin-bottom: 6px; color: #333;">⏱️ Time Navigation</div>
+                    <input type="range" id="timeRange" min="0" max="100" value="0" oninput="updateTime()" style="width: 100%; margin-bottom: 6px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 9px;">
+                        <div>
+                            <div style="color: #999; margin-bottom: 2px;">Start Time</div>
+                            <div style="font-weight: 600; color: #667eea; font-family: monospace;" id="timeStart">0.00s</div>
+                        </div>
+                        <div>
+                            <div style="color: #999; margin-bottom: 2px;">Window Duration</div>
+                            <div style="font-weight: 600; color: #667eea; font-family: monospace;" id="timeDuration">0.00s</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- ANALYSIS TAB -->
-            <div id="analysis" class="tab-content active">
+            <div id="analysis" class="tab-content">
                 <div class="main">
                     <div class="conclusion-box" id="conclusion"></div>
                     <div id="analysisDetail"></div>
                 </div>
             </div>
             
-            <!-- WAVEFORM TAB -->
-            <div id="waveform" class="tab-content">
-                <div class="main" style="grid-column: 1/-1;">
-                    <div class="waveform-grid">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 600; color: #333; margin-bottom: 6px;">⚡ Voltage</div>
-                            <div class="chart-box"><canvas id="voltageChart"></canvas></div>
-                        </div>
-                        <div>
-                            <div style="font-size: 11px; font-weight: 600; color: #333; margin-bottom: 6px;">📈 Current</div>
-                            <div class="chart-box"><canvas id="currentChart"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- REFERENCE DB TAB -->
+            <!-- REFERENCE TAB -->
             <div id="reference" class="tab-content">
-                <div class="main" style="grid-column: 1/-1;">
+                <div class="main">
                     <div id="referenceDB"></div>
                 </div>
             </div>
             
-            <!-- COMPARISON TAB -->
-            <div id="comparison" class="tab-content">
-                <div class="main" style="grid-column: 1/-1;">
-                    <div id="comparisonDetail"></div>
-                </div>
-            </div>
-            
-            <div class="main" id="middle"></div>
-            <div class="main" id="middle2"></div>
-            
+            <!-- SIDEBAR -->
             <div class="sidebar">
-                <div style="background: #667eea; color: white; padding: 8px; border-radius: 4px; margin-bottom: 8px; text-align: center; font-weight: 600; font-size: 11px;">
-                    <div id="primaryFault">Analyzing...</div>
-                    <div id="confidenceBadge" style="font-size: 9px; margin-top: 4px;">-</div>
+                <div style="background: #667eea; color: white; padding: 8px; border-radius: 4px; margin-bottom: 8px; text-align: center;">
+                    <div id="primaryFault" style="font-weight: 600; font-size: 10px;">Analyzing...</div>
+                    <div id="confidenceBadge" style="font-size: 8px; margin-top: 3px;">-</div>
                 </div>
                 
                 <div class="group">
-                    <div class="group-title">⏱️ Time Control</div>
-                    <input type="range" id="timeRange" min="0" max="100" value="0" oninput="syncAll()">
-                    <div class="display" id="timeDisplay">0.00s</div>
-                </div>
-                
-                <div class="group">
-                    <div class="group-title">⚡ Measured Metrics</div>
+                    <div class="group-title">⚡ Live Metrics</div>
                     <div class="stat">
                         <div class="stat-label">Peak I (A)</div>
                         <div class="stat-value" id="iPeak">-</div>
@@ -426,7 +462,7 @@
                         <div class="stat-value" id="vDip">-</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-label">Rise Time (ms)</div>
+                        <div class="stat-label">Rise (ms)</div>
                         <div class="stat-value" id="riseTime">-</div>
                     </div>
                     <div class="stat">
@@ -438,159 +474,264 @@
                         <div class="stat-value" id="thd">-</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-label">Asymmetry (%)</div>
+                        <div class="stat-label">Asym (%)</div>
                         <div class="stat-value" id="asym">-</div>
                     </div>
                 </div>
                 
-                <div class="decision-tree" id="decisionTree"></div>
+                <div class="group">
+                    <div class="group-title">📋 Ranked Faults</div>
+                    <div class="fault-list" id="faultList"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ===== COMPREHENSIVE FAULT FINGERPRINT DATABASE =====
+        // ===== EXTENDED FAULT FINGERPRINT DATABASE (15 TYPES) =====
         const FAULT_DATABASE = {
-            'lightning': {
-                name: '⚡ Lightning Strike',
+            'lightning_direct': {
+                name: '⚡ Lightning - Direct Stroke',
                 icon: '⚡',
-                source: 'IEEE C62.92.2, CIGRE WG37.43',
+                source: 'IEEE C62.92.2',
                 characteristics: {
-                    peakI: { min: 1000, max: 200000, unit: 'A', weight: 0.25 },
-                    riseTime: { min: 0.0005, max: 0.01, unit: 'ms', weight: 0.3 },
-                    duration: { min: 0.1, max: 2, unit: 'ms', weight: 0.15 },
-                    vDip: { min: 0, max: 30, unit: '%', weight: 0.15 },
-                    freqContent: { min: 1, max: 100, unit: 'kHz', weight: 0.1 },
-                    asym: { min: 30, max: 80, unit: '%', weight: 0.05 }
+                    peakI: { min: 5000, max: 200000, weight: 0.25 },
+                    riseTime: { min: 0.0005, max: 0.005, weight: 0.3 },
+                    duration: { min: 0.05, max: 0.5, weight: 0.15 },
+                    vDip: { min: 0, max: 20, weight: 0.15 },
+                    freqContent: { min: 10, max: 100, weight: 0.15 }
                 },
-                keyIndicators: ['Extremely fast rise time <10 μs', 'Very high peak current >1000A', 'Very short duration <2ms', 'High frequency oscillation 10-100 kHz', 'Asymmetric phase involvement'],
-                realWorldExample: 'Direct stroke: Peak 25,000A, Rise 2μs, Duration 0.5ms',
-                recoveryTime: 'Immediate (0.5-10s)',
-                probability: 'Rare'
+                keyIndicators: ['Extreme current 5-200kA', 'Ultra-fast rise <5 μs', 'Very short duration <0.5ms', 'High frequency 10-100kHz'],
+                realWorldExample: 'Peak 25,000A, Rise 2μs, Duration 0.3ms'
             },
-            'vegetation': {
-                name: '🌳 Vegetation Contact',
-                icon: '🌳',
-                source: 'CIGRE, Blackburn & Domin, Field Experience',
+            'lightning_indirect': {
+                name: '⚡ Lightning - Indirect/Coupling',
+                icon: '⚡',
+                source: 'IEEE C62.92.2',
                 characteristics: {
-                    peakI: { min: 200, max: 1500, unit: 'A', weight: 0.2 },
-                    riseTime: { min: 10, max: 150, unit: 'ms', weight: 0.15 },
-                    duration: { min: 50, max: 500, unit: 'ms', weight: 0.15 },
-                    vDip: { min: 50, max: 90, unit: '%', weight: 0.15 },
-                    thd: { min: 30, max: 80, unit: '%', weight: 0.25 },
-                    faultResist: { min: 500, max: 50000, unit: 'Ω', weight: 0.1 }
+                    peakI: { min: 1000, max: 5000, weight: 0.2 },
+                    riseTime: { min: 0.005, max: 0.01, weight: 0.25 },
+                    duration: { min: 0.1, max: 2, weight: 0.15 },
+                    vDip: { min: 10, max: 30, weight: 0.2 },
+                    asym: { min: 30, max: 80, weight: 0.2 }
                 },
-                keyIndicators: ['Slow rise time 10-150ms', 'Moderate current 200-1000A', 'Long duration 50-500ms', 'HIGH THD 30-80% (arc resistance)', 'Gradual recovery/re-ignition'],
-                realWorldExample: 'Small branch: Peak 450A, Rise 35ms, Duration 120ms, THD 45%',
-                recoveryTime: 'Gradual (often self-clearing)',
-                probability: 'Common (seasonal)'
+                keyIndicators: ['High current 1-5kA', 'Fast rise 5-10 μs', 'Short duration <2ms', 'Asymmetric phase'],
+                realWorldExample: 'Peak 3,500A, Rise 5μs, Asymmetry 65%'
+            },
+            'vegetation_small': {
+                name: '🌳 Vegetation - Small Contact',
+                icon: '🌳',
+                source: 'CIGRE, Field Experience',
+                characteristics: {
+                    peakI: { min: 200, max: 600, weight: 0.2 },
+                    riseTime: { min: 20, max: 80, weight: 0.15 },
+                    duration: { min: 50, max: 200, weight: 0.15 },
+                    vDip: { min: 50, max: 75, weight: 0.15 },
+                    thd: { min: 35, max: 60, weight: 0.25 },
+                    faultResist: { min: 5000, max: 50000, weight: 0.1 }
+                },
+                keyIndicators: ['Moderate current 200-600A', 'Slow rise 20-80ms', 'Medium duration 50-200ms', 'HIGH THD 35-60%'],
+                realWorldExample: 'Peak 450A, Rise 35ms, THD 45%'
+            },
+            'vegetation_large': {
+                name: '🌳 Vegetation - Large/Sustained',
+                icon: '🌳',
+                source: 'CIGRE',
+                characteristics: {
+                    peakI: { min: 600, max: 1500, weight: 0.2 },
+                    riseTime: { min: 50, max: 150, weight: 0.15 },
+                    duration: { min: 100, max: 500, weight: 0.2 },
+                    vDip: { min: 60, max: 90, weight: 0.15 },
+                    thd: { min: 40, max: 80, weight: 0.25 },
+                    restriking: { min: 1, max: 5, weight: 0.05 }
+                },
+                keyIndicators: ['Higher current 600-1500A', 'Longer rise 50-150ms', 'Long duration 100-500ms', 'Very high THD 40-80%', 'May have re-ignitions'],
+                realWorldExample: 'Peak 850A, Rise 80ms, Duration 280ms, THD 62%'
             },
             '3phase_fault': {
                 name: '🔴 3-Phase Short Circuit',
                 icon: '🔴',
-                source: 'IEEE C37.010, IEC 60050-195, NEPLAN',
+                source: 'IEEE C37.010',
                 characteristics: {
-                    peakI: { min: 2000, max: 20000, unit: 'A', weight: 0.3 },
-                    riseTime: { min: 0.5, max: 20, unit: 'ms', weight: 0.2 },
-                    duration: { min: 10, max: 150, unit: 'ms', weight: 0.15 },
-                    vDip: { min: 10, max: 40, unit: '%', weight: 0.15 },
-                    asym: { min: 5, max: 15, unit: '%', weight: 0.2 }
+                    peakI: { min: 2000, max: 20000, weight: 0.3 },
+                    riseTime: { min: 0.5, max: 20, weight: 0.2 },
+                    duration: { min: 10, max: 150, weight: 0.15 },
+                    vDip: { min: 10, max: 40, weight: 0.15 },
+                    asym: { min: 5, max: 15, weight: 0.2 }
                 },
-                keyIndicators: ['VERY HIGH peak current >2000A', 'Very low asymmetry <15% (BALANCED)', 'Perfectly balanced phases', 'Very deep voltage dip 10-40%', 'Minimal zero-sequence current'],
-                realWorldExample: '275kV line: Peak 8,500A, Rise 5ms, Asymmetry 3%, Deep dip',
-                recoveryTime: 'Fast (relay + breaker 40-80ms)',
-                probability: 'Occasional'
+                keyIndicators: ['VERY HIGH current 2-20kA', 'Very low asymmetry <15%', 'Balanced phases', 'Deep voltage dip 10-40%'],
+                realWorldExample: 'Peak 8,500A, Asymmetry 3%'
             },
             '2phase_fault': {
                 name: '🟠 2-Phase Short Circuit',
                 icon: '🟠',
-                source: 'IEEE C37.010, Field Studies',
+                source: 'IEEE C37.010',
                 characteristics: {
-                    peakI: { min: 1500, max: 8000, unit: 'A', weight: 0.25 },
-                    riseTime: { min: 1, max: 15, unit: 'ms', weight: 0.15 },
-                    duration: { min: 20, max: 150, unit: 'ms', weight: 0.15 },
-                    vDip: { min: 30, max: 70, unit: '%', weight: 0.15 },
-                    asym: { min: 40, max: 70, unit: '%', weight: 0.25 }
+                    peakI: { min: 1500, max: 8000, weight: 0.25 },
+                    riseTime: { min: 1, max: 15, weight: 0.15 },
+                    duration: { min: 20, max: 150, weight: 0.15 },
+                    vDip: { min: 30, max: 70, weight: 0.15 },
+                    asym: { min: 40, max: 70, weight: 0.3 }
                 },
-                keyIndicators: ['HIGH asymmetry 40-70%', 'Two phases high, one phase low', 'Moderate voltage dip 30-70%', 'Peak current ~70-80% of 3-phase'],
-                realWorldExample: 'B-C fault: Peak 5,200A, Phase B/C 5000A, Phase A 1,200A, Asym 65%',
-                recoveryTime: 'Fast (Zone 2 trip)',
-                probability: 'Occasional'
+                keyIndicators: ['High current 1.5-8kA', 'HIGH asymmetry 40-70%', 'Two phases equal, one low', 'Moderate dip 30-70%'],
+                realWorldExample: 'Peak 5,200A, Asymmetry 65%'
             },
-            '1phase_fault': {
+            '1phase_ground': {
                 name: '🟡 1-Phase Ground Fault',
                 icon: '🟡',
-                source: 'IEEE C37.010, IEC 61936-1',
+                source: 'IEEE C37.010',
                 characteristics: {
-                    peakI: { min: 100, max: 2000, unit: 'A', weight: 0.2 },
-                    riseTime: { min: 5, max: 100, unit: 'ms', weight: 0.15 },
-                    duration: { min: 50, max: 500, unit: 'ms', weight: 0.15 },
-                    vDip: { min: 40, max: 80, unit: '%', weight: 0.15 },
-                    asym: { min: 60, max: 90, unit: '%', weight: 0.25 },
-                    zeroSeq: { min: 0.5, max: 1, unit: 'dominant', weight: 0.1 }
+                    peakI: { min: 100, max: 2000, weight: 0.2 },
+                    riseTime: { min: 5, max: 100, weight: 0.15 },
+                    duration: { min: 50, max: 500, weight: 0.15 },
+                    vDip: { min: 40, max: 80, weight: 0.15 },
+                    asym: { min: 60, max: 90, weight: 0.25 },
+                    zeroSeq: { min: 0.5, max: 1, weight: 0.1 }
                 },
-                keyIndicators: ['VERY HIGH asymmetry 60-90%', 'One phase very high, two low', 'High zero-sequence current', 'Moderate voltage dip 40-80%'],
-                realWorldExample: 'Insulator flashover Phase A: Peak 650A, Phase B/C 35-40A, Asym 76%',
-                recoveryTime: 'Self-clearing after CB open',
-                probability: 'Common'
+                keyIndicators: ['VERY HIGH asymmetry 60-90%', 'One phase very high', 'Two phases low', 'High zero-sequence'],
+                realWorldExample: 'Peak 650A, Asymmetry 76%'
+            },
+            'phase_phase_fault': {
+                name: '🟠 Phase-to-Phase (No Ground)',
+                icon: '🟠',
+                source: 'IEEE C37.010',
+                characteristics: {
+                    peakI: { min: 1200, max: 6000, weight: 0.25 },
+                    riseTime: { min: 2, max: 20, weight: 0.15 },
+                    duration: { min: 30, max: 200, weight: 0.15 },
+                    vDip: { min: 35, max: 70, weight: 0.15 },
+                    asym: { min: 45, max: 75, weight: 0.25 },
+                    zeroSeq: { min: 0, max: 0.2, weight: 0.05 }
+                },
+                keyIndicators: ['Moderate-high current 1.2-6kA', 'HIGH asymmetry 45-75%', 'Two affected phases', 'Very LOW zero-sequence'],
+                realWorldExample: 'Peak 4,800A, Two phases 4.5kA, One phase 1.2kA'
             },
             'overload': {
                 name: '📈 Overload Condition',
                 icon: '📈',
-                source: 'IEEE C37.95, Blackburn & Domin',
+                source: 'IEEE C37.95',
                 characteristics: {
-                    peakI: { min: 150, max: 400, unit: 'A', weight: 0.2 },
-                    riseTime: { min: 50, max: 200, unit: 'ms', weight: 0.15 },
-                    duration: { min: 1000, max: 60000, unit: 'ms', weight: 0.35 },
-                    vDip: { min: 60, max: 95, unit: '%', weight: 0.15 },
-                    asym: { min: 5, max: 20, unit: '%', weight: 0.1 },
-                    stability: { min: 0, max: 0, unit: 'stable', weight: 0.05 }
+                    peakI: { min: 150, max: 400, weight: 0.2 },
+                    riseTime: { min: 50, max: 200, weight: 0.15 },
+                    duration: { min: 1000, max: 600000, weight: 0.35 },
+                    vDip: { min: 60, max: 95, weight: 0.15 },
+                    asym: { min: 5, max: 20, weight: 0.1 },
+                    stability: { min: 0, max: 1, weight: 0.05 }
                 },
-                keyIndicators: ['VERY LONG DURATION (minutes!)', 'Minimal voltage dip (60-95%)', 'Balanced phases (low asymmetry)', 'Stable current (no oscillation)', 'Slow rise (load gradually)'],
-                realWorldExample: 'Heavy pump: 250A (1.5x rated), 8% dip, 3 minute duration, balanced',
-                recoveryTime: 'Gradual (slow load reduction)',
-                probability: 'Common'
+                keyIndicators: ['VERY LONG DURATION (minutes+)', 'Minimal voltage dip 60-95%', 'Balanced phases', 'Stable current'],
+                realWorldExample: '250A load, 8% dip, 3 minute duration'
             },
-            'harmonic': {
-                name: '〰️ Harmonic Distortion',
+            'harmonic_load': {
+                name: '〰️ Harmonic Distortion - Load',
                 icon: '〰️',
-                source: 'IEC 61000-4-7, IEEE 519',
+                source: 'IEC 61000-4-7',
                 characteristics: {
-                    peakI: { min: 100, max: 300, unit: 'A', weight: 0.1 },
-                    duration: { min: 5000, max: 60000, unit: 'ms', weight: 0.2 },
-                    thd: { min: 50, max: 100, unit: '%', weight: 0.5 },
-                    vDip: { min: 85, max: 100, unit: '%', weight: 0.15 },
-                    freqMultiple: { min: 150, max: 350, unit: 'Hz', weight: 0.05 }
+                    peakI: { min: 150, max: 400, weight: 0.1 },
+                    duration: { min: 10000, max: 600000, weight: 0.2 },
+                    thd: { min: 35, max: 65, weight: 0.4 },
+                    vDip: { min: 90, max: 100, weight: 0.15 },
+                    h3: { min: 15, max: 40, weight: 0.1 },
+                    h5: { min: 8, max: 30, weight: 0.05 }
                 },
-                keyIndicators: ['VERY HIGH THD 50-100% (CRITICAL!)', 'Very long sustained duration', 'Minimal voltage dip (85-100%)', 'Steady-state distortion', 'Multiple frequency components'],
-                realWorldExample: 'VFD Load: Fundamental 200A, 3rd 80A, 5th 60A, 7th 40A, THD 58%',
-                recoveryTime: 'Sustained (no clearing)',
-                probability: 'Common (with converters)'
+                keyIndicators: ['HIGH THD 35-65%', 'Long sustained duration', 'Minimal voltage dip', 'Steady-state distortion', 'Load-dependent'],
+                realWorldExample: 'VFD load: THD 45%, Duration sustained'
+            },
+            'harmonic_converter': {
+                name: '〰️ Harmonic - Power Converter',
+                icon: '〰️',
+                source: 'IEC 61000-4-7',
+                characteristics: {
+                    peakI: { min: 100, max: 300, weight: 0.1 },
+                    duration: { min: 10000, max: 600000, weight: 0.2 },
+                    thd: { min: 50, max: 100, weight: 0.4 },
+                    vDip: { min: 85, max: 100, weight: 0.15 },
+                    h5: { min: 20, max: 50, weight: 0.1 },
+                    h7: { min: 10, max: 40, weight: 0.05 }
+                },
+                keyIndicators: ['VERY HIGH THD 50-100%', 'Characteristic odd harmonics', '5th & 7th dominant', 'No voltage dip', 'Converter signature'],
+                realWorldExample: '6-pulse converter: 5th 35%, 7th 25%, THD 58%'
+            },
+            'transient_overvoltage': {
+                name: '⚡ Transient Overvoltage',
+                icon: '⚡',
+                source: 'IEEE C62.92.1',
+                characteristics: {
+                    peakV: { min: 1.5, max: 3, weight: 0.3 },
+                    duration: { min: 1, max: 100, weight: 0.2 },
+                    riseTime: { min: 0.1, max: 10, weight: 0.2 },
+                    freqContent: { min: 1, max: 50, weight: 0.15 },
+                    peakI: { min: 0, max: 100, weight: 0.15 }
+                },
+                keyIndicators: ['High voltage spike 1.5-3pu', 'Fast rise time', 'Short duration', 'No high current', 'Oscillatory'],
+                realWorldExample: 'Capacitor switching: 2.3pu, Rise 2ms'
+            },
+            'ferroresonance': {
+                name: '〰️ Ferroresonance',
+                icon: '〰️',
+                source: 'CIGRE WG37.43',
+                characteristics: {
+                    peakV: { min: 1.3, max: 2.5, weight: 0.2 },
+                    peakI: { min: 200, max: 1000, weight: 0.2 },
+                    duration: { min: 100, max: 10000, weight: 0.2 },
+                    thd: { min: 40, max: 80, weight: 0.2 },
+                    fundamental: { min: 50, max: 50.5, weight: 0.1 },
+                    subharmonic: { min: 20, max: 30, weight: 0.1 }
+                },
+                keyIndicators: ['High voltage AND high current', 'Very high THD with subharmonic', 'Sustained oscillation', 'Usually 3-phase symmetric'],
+                realWorldExample: 'Unloaded transformer: V 2.1pu, I 650A, THD 65%'
+            },
+            'dc_injection': {
+                name: '⚡ DC Injection/Asymmetry',
+                icon: '⚡',
+                source: 'IEEE 1159',
+                characteristics: {
+                    peakI: { min: 100, max: 500, weight: 0.2 },
+                    dcOffset: { min: 0.1, max: 1, weight: 0.3 },
+                    duration: { min: 10, max: 10000, weight: 0.2 },
+                    asymmetry: { min: 30, max: 100, weight: 0.2 },
+                    waveSymmetry: { min: -50, max: 50, weight: 0.1 }
+                },
+                keyIndicators: ['Waveform DC offset', 'Asymmetric positive/negative', 'Phase imbalance', 'Non-zero center line'],
+                realWorldExample: 'Converter fault: DC offset ±20%, Asymmetry 45%'
+            },
+            'sustained_sag': {
+                name: '📉 Sustained Voltage Sag',
+                icon: '📉',
+                source: 'IEEE 1159',
+                characteristics: {
+                    vDip: { min: 20, max: 90, weight: 0.3 },
+                    duration: { min: 20, max: 600000, weight: 0.3 },
+                    peakI: { min: 50, max: 300, weight: 0.15 },
+                    asym: { min: 5, max: 40, weight: 0.15 },
+                    recovery: { min: 0, max: 1, weight: 0.1 }
+                },
+                keyIndicators: ['Voltage dip 20-90%', 'Duration seconds to minutes', 'Low/moderate current', 'Gradual recovery'],
+                realWorldExample: 'Network fault: V drop to 50%, Current 120A, 5s duration'
             },
             'normal': {
                 name: '✓ Normal Operation',
                 icon: '✓',
-                source: 'IEC 61000-4-28, IEEE 1159',
+                source: 'IEC 61000-4-28',
                 characteristics: {
-                    peakI: { min: 50, max: 150, unit: 'A', weight: 0.2 },
-                    vDip: { min: 95, max: 105, unit: '%', weight: 0.3 },
-                    asym: { min: 0, max: 5, unit: '%', weight: 0.2 },
-                    thd: { min: 0, max: 15, unit: '%', weight: 0.2 },
-                    freq: { min: 49.5, max: 50.5, unit: 'Hz', weight: 0.1 }
+                    peakI: { min: 50, max: 150, weight: 0.2 },
+                    vDip: { min: 95, max: 105, weight: 0.3 },
+                    asym: { min: 0, max: 5, weight: 0.2 },
+                    thd: { min: 0, max: 15, weight: 0.2 },
+                    freq: { min: 49.5, max: 50.5, weight: 0.1 }
                 },
-                keyIndicators: ['Voltage 95-105% nominal (stable)', 'Low current (rated ±20%)', 'Perfect phase balance <5%', 'Low THD <15%', 'Perfect sinusoidal waveform'],
-                realWorldExample: 'Steady state: Current 100A balanced, Voltage 87.5kV ±5%, THD 5%',
-                recoveryTime: 'N/A (continuous)',
-                probability: 'Normal'
+                keyIndicators: ['Voltage 95-105% nominal', 'Low current (rated ±20%)', 'Perfect balance <5%', 'Low THD <15%'],
+                realWorldExample: 'Steady state: 100A, 87.5kV, THD 5%'
             }
         };
 
         let allData = [];
         let faultMetrics = null;
         let zoomLevel = 1;
+        let panOffset = 0;
         let maxDuration = 0;
         let vScale = 11.889732;
         let iScale = 2.762230;
+        let charts = {};
         
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -601,64 +742,85 @@
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', e => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
         
+        function showLoading(message) {
+            document.getElementById('loadingOverlay').classList.add('active');
+            document.getElementById('loadingMessage').textContent = message;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+        
         function handleFile(file) {
             if (!file.name.toLowerCase().endsWith('.dat')) { alert('Only .DAT files'); return; }
+            showLoading('Reading file...');
             const reader = new FileReader();
-            reader.onload = e => parseDAT(e.target.result, file.name);
+            reader.onload = e => {
+                setTimeout(() => parseDAT(e.target.result, file.name), 100);
+            };
             reader.readAsText(file);
         }
         
         function parseDAT(content, filename) {
-            document.getElementById('fileInfo').classList.add('active');
-            document.getElementById('ctptConfig').classList.add('active');
-            document.getElementById('fileName').textContent = filename;
-            
-            const lines = content.trim().split('\n');
-            allData = [];
-            
-            for (const line of lines) {
-                const parts = line.trim().split(',').map(p => p.trim());
-                if (parts.length < 9) continue;
-                try {
-                    allData.push({
-                        s: parseInt(parts[0]),
-                        t: parseInt(parts[1]),
-                        va: parseInt(parts[2]),
-                        vb: parseInt(parts[3]),
-                        vc: parseInt(parts[4]),
-                        ia: parseInt(parts[5]),
-                        ib: parseInt(parts[6]),
-                        ic: parseInt(parts[7]),
-                        in: parseInt(parts[8]),
-                        digital: Array.from({length: 32}, (_, i) => parseInt(parts[9+i]) || 0)
-                    });
-                } catch (e) {}
-            }
-            
-            if (allData.length === 0) { alert('No valid data'); return; }
-            
-            maxDuration = allData[allData.length - 1].t / 1e6;
-            document.getElementById('sampleCount').textContent = allData.length;
-            document.getElementById('duration').textContent = maxDuration.toFixed(2) + ' s';
-            
-            analyze();
-            document.getElementById('tabsContainer').style.display = 'flex';
-            document.getElementById('content').style.display = 'grid';
+            showLoading('Parsing samples...');
+            setTimeout(() => {
+                document.getElementById('fileInfo').classList.add('active');
+                document.getElementById('ctptConfig').classList.add('active');
+                document.getElementById('fileName').textContent = filename;
+                
+                const lines = content.trim().split('\n');
+                allData = [];
+                
+                for (const line of lines) {
+                    const parts = line.trim().split(',').map(p => p.trim());
+                    if (parts.length < 9) continue;
+                    try {
+                        allData.push({
+                            s: parseInt(parts[0]),
+                            t: parseInt(parts[1]),
+                            va: parseInt(parts[2]),
+                            vb: parseInt(parts[3]),
+                            vc: parseInt(parts[4]),
+                            ia: parseInt(parts[5]),
+                            ib: parseInt(parts[6]),
+                            ic: parseInt(parts[7]),
+                            in: parseInt(parts[8]),
+                            digital: Array.from({length: 32}, (_, i) => parseInt(parts[9+i]) || 0)
+                        });
+                    } catch (e) {}
+                }
+                
+                if (allData.length === 0) { hideLoading(); alert('No valid data'); return; }
+                
+                maxDuration = allData[allData.length - 1].t / 1e6;
+                document.getElementById('sampleCount').textContent = allData.length;
+                document.getElementById('duration').textContent = maxDuration.toFixed(2) + ' s';
+                
+                showLoading('Analyzing metrics...');
+                setTimeout(() => {
+                    analyze();
+                    hideLoading();
+                    document.getElementById('tabsContainer').style.display = 'flex';
+                    document.getElementById('content').style.display = 'grid';
+                    updateTime();
+                }, 100);
+            }, 50);
         }
         
         function updateCTPT() {
             vScale = parseFloat(document.getElementById('vScale').value) || 11.889732;
             iScale = parseFloat(document.getElementById('iScale').value) || 2.762230;
-            if (allData.length > 0) analyze();
+            if (allData.length > 0) {
+                analyze();
+                updateTime();
+            }
         }
         
         function analyze() {
             faultMetrics = calculateMetrics();
             const fault = classifyFault(faultMetrics);
             displayConclusion(fault);
-            displayReferenceDB(fault);
-            displayComparison(fault);
-            syncAll();
+            displayRanked(fault);
         }
         
         function calculateMetrics() {
@@ -669,7 +831,7 @@
                 if (curr < 100 && distStart !== -1) { distEnd = i; break; }
             }
             
-            if (distStart === -1) return { peakI: 0, vDip: 100, riseTime: 0, duration: 0, thd: 0, asym: 0, distStartTime: 0, peakTime: 0, peakV: 0 };
+            if (distStart === -1) return { peakI: 0, vDip: 100, riseTime: 0, duration: 0, thd: 0, asym: 0 };
             
             if (distEnd === -1) distEnd = allData.length - 1;
             const dist = allData.slice(distStart, distEnd);
@@ -680,6 +842,7 @@
             const currents = dist.map(d => Math.sqrt(d.ia**2 + d.ib**2 + d.ic**2) / Math.sqrt(3) * iScale);
             
             const peakI = Math.max(...currents);
+            const peakV = Math.max(...voltages);
             const minV = Math.min(...voltages);
             const vDip = (minV / baseV) * 100;
             
@@ -689,7 +852,7 @@
                 if (currents[i] >= i10 && idx10 === 0) idx10 = i;
                 if (currents[i] >= i90) { idx90 = i; break; }
             }
-            const riseTime = (dist[idx90].t - dist[idx10].t) / 1000;
+            const riseTime = idx10 !== idx90 ? (dist[idx90].t - dist[idx10].t) / 1000 : 0;
             const duration = (dist[dist.length - 1].t - dist[0].t) / 1e6 * 1000;
             
             let variance = 0;
@@ -698,24 +861,23 @@
                 const slope = (currents[i + 1] - currents[i - 1]) / 2;
                 variance += slope * slope;
             }
-            const thd = Math.min(100, (Math.sqrt(variance / currents.length) / mean) * 100);
+            const thd = Math.min(100, (Math.sqrt(variance / currents.length) / (mean || 1)) * 100);
             
             const ia = dist.map(d => Math.abs(d.ia * iScale));
             const ib = dist.map(d => Math.abs(d.ib * iScale));
             const ic = dist.map(d => Math.abs(d.ic * iScale));
             const maxI = [Math.max(...ia), Math.max(...ib), Math.max(...ic)];
-            const asym = (Math.max(...maxI) - Math.min(...maxI)) / Math.max(...maxI) * 100;
+            const asym = (Math.max(...maxI) - Math.min(...maxI)) / (Math.max(...maxI) || 1) * 100;
             
             return {
                 peakI: peakI,
+                peakV: peakV,
                 vDip: vDip,
                 riseTime: riseTime,
                 duration: duration,
                 thd: thd,
                 asym: asym,
-                distStartTime: allData[distStart].t / 1e6,
-                peakTime: allData[distStart + idx90].t / 1e6,
-                peakV: Math.max(...voltages)
+                distStartTime: allData[distStart].t / 1e6
             };
         }
         
@@ -726,6 +888,7 @@
                 const chars = faultDef.characteristics;
                 
                 if (chars.peakI && metrics.peakI >= chars.peakI.min && metrics.peakI <= chars.peakI.max) score += chars.peakI.weight * 100;
+                if (chars.peakV && metrics.peakV >= chars.peakV.min && metrics.peakV <= chars.peakV.max) score += chars.peakV.weight * 100;
                 if (chars.riseTime && metrics.riseTime >= chars.riseTime.min && metrics.riseTime <= chars.riseTime.max) score += chars.riseTime.weight * 100;
                 if (chars.duration && metrics.duration >= chars.duration.min && metrics.duration <= chars.duration.max) score += chars.duration.weight * 100;
                 if (chars.vDip && metrics.vDip >= chars.vDip.min && metrics.vDip <= chars.vDip.max) score += chars.vDip.weight * 100;
@@ -747,151 +910,53 @@
             const timeMin = Math.floor(time / 60);
             const timeSec = (time % 60).toFixed(2);
             
-            let confClass = 'confidence-high';
-            if (fault.score < 50) confClass = 'confidence-low';
-            else if (fault.score < 70) confClass = 'confidence-medium';
+            let confClass = 'background: #c8e6c9; color: #2e7d32;';
+            if (fault.score < 50) confClass = 'background: #f8d7da; color: #721c24;';
+            else if (fault.score < 70) confClass = 'background: #fff3cd; color: #856404;';
             
             let html = `<div class="conclusion-title">${fault.primary.icon} ${fault.primary.name}</div>
                 <div class="conclusion-detail">
-                    <strong>Gangguan:</strong> ${fault.primary.name.split(' ').slice(1).join(' ')}<br>
-                    <strong>Waktu Mulai:</strong> ${time.toFixed(3)}s (${timeMin}:${timeSec})<br>
-                    <strong>Confidence:</strong> ${Math.round(fault.score)}%
+                    <strong>Gangguan:</strong> ${fault.primary.name}<br>
+                    <strong>Waktu:</strong> ${time.toFixed(3)}s (${timeMin}:${timeSec})<br>
+                    <strong>Confidence:</strong> ${Math.round(fault.score)}%<br>
+                    <strong>Sumber:</strong> ${fault.primary.source}
                 </div>
                 <div class="conclusion-detail">
                     <strong>Karakteristik Terukur:</strong><br>
-                    • Arus Puncak: ${fault.metrics.peakI.toFixed(0)} A<br>
-                    • Penurunan Tegangan: ${(100 - fault.metrics.vDip).toFixed(1)}%<br>
-                    • Rise Time: ${fault.metrics.riseTime.toFixed(2)} ms<br>
-                    • Durasi: ${fault.metrics.duration.toFixed(0)} ms<br>
-                    • THD: ${fault.metrics.thd.toFixed(1)}%<br>
-                    • Asimetri Fase: ${fault.metrics.asym.toFixed(1)}%
-                </div>
-                <div class="conclusion-detail">
-                    <strong>Sumber Referensi:</strong><br>
-                    ${fault.primary.source}
+                    • I Peak: ${fault.metrics.peakI.toFixed(0)}A | V Peak: ${fault.metrics.peakV.toFixed(1)}kV<br>
+                    • V Dip: ${(100-fault.metrics.vDip).toFixed(1)}% | Rise: ${fault.metrics.riseTime.toFixed(2)}ms<br>
+                    • Duration: ${fault.metrics.duration.toFixed(0)}ms | THD: ${fault.metrics.thd.toFixed(1)}% | Asym: ${fault.metrics.asym.toFixed(1)}%
                 </div>`;
             
             document.getElementById('conclusion').innerHTML = html;
-            document.getElementById('primaryFault').textContent = fault.primary.icon + ' ' + fault.primary.name;
-            document.getElementById('confidenceBadge').innerHTML = `<span class="confidence-badge ${confClass}">${Math.round(fault.score)}% Confidence</span>`;
+            document.getElementById('primaryFault').textContent = fault.primary.icon + ' ' + fault.primary.name.split(' - ')[0];
+            document.getElementById('confidenceBadge').innerHTML = `<span style="${confClass} padding: 3px 6px; border-radius: 10px; font-weight: 600; font-size: 8px;">${Math.round(fault.score)}%</span>`;
         }
         
-        function displayReferenceDB(fault) {
-            const db = fault.primary;
-            let html = `<div style="background: white; padding: 15px; border-radius: 8px;">
-                <h2 style="color: #667eea; margin-bottom: 10px; font-size: 14px;">${db.icon} ${db.name} - Reference Database</h2>
-                
-                <div class="reference-section">
-                    <div class="reference-title">📚 Source & Standards</div>
-                    <div class="reference-item">
-                        <div class="reference-label">Primary Source:</div>
-                        <div class="reference-value">${db.source}</div>
-                    </div>
-                </div>
-                
-                <div class="reference-section">
-                    <div class="reference-title">📊 Standard Characteristics</div>`;
-            
-            for (const [key, param] of Object.entries(db.characteristics)) {
-                html += `<div class="reference-item">
-                    <div class="reference-label">${key.toUpperCase()}:</div>
-                    <div class="reference-value">${param.min} - ${param.max} ${param.unit} (Weight: ${param.weight})</div>
+        function displayRanked(fault) {
+            let html = '';
+            fault.ranked.slice(0, 6).forEach((item, idx) => {
+                const faultDef = FAULT_DATABASE[item[0]];
+                const score = Math.round(item[1] * 0.8);
+                html += `<div class="fault-item" onclick="alert('${faultDef.name}\\n${faultDef.source}\\n${faultDef.realWorldExample}')">
+                    <div class="fault-rank">#${idx+1}</div>
+                    <div class="fault-name">${faultDef.icon} ${faultDef.name.split(' - ')[0]}</div>
+                    <div class="fault-score">${score}%</div>
                 </div>`;
-            }
-            
-            html += `</div>
-                
-                <div class="reference-section">
-                    <div class="reference-title">⭐ Key Identifiers</div>`;
-            
-            db.keyIndicators.forEach(ind => {
-                html += `<div class="reference-item">✓ ${ind}</div>`;
             });
-            
-            html += `</div>
-                
-                <div class="reference-section">
-                    <div class="reference-title">🔬 Real-World Example</div>
-                    <div class="reference-item" style="background: #e8eef7;">${db.realWorldExample}</div>
-                </div>
-                
-                <div class="reference-section">
-                    <div class="reference-title">⏱️ Recovery & Probability</div>
-                    <div class="reference-item">
-                        <div class="reference-label">Recovery Time:</div>
-                        <div class="reference-value">${db.recoveryTime}</div>
-                    </div>
-                    <div class="reference-item">
-                        <div class="reference-label">Probability:</div>
-                        <div class="reference-value">${db.probability}</div>
-                    </div>
-                </div>
-            </div>`;
-            
-            document.getElementById('referenceDB').innerHTML = html;
+            document.getElementById('faultList').innerHTML = html;
         }
         
-        function displayComparison(fault) {
-            let html = `<div style="background: white; padding: 15px; border-radius: 8px;">
-                <h2 style="color: #667eea; margin-bottom: 10px; font-size: 14px;">📋 Measured vs Standard Comparison</h2>
-                
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                    <tr style="background: #f0e6ff;">
-                        <th style="padding: 8px; text-align: left; font-weight: 600; color: #667eea; border-bottom: 2px solid #667eea;">Parameter</th>
-                        <th style="padding: 8px; text-align: center; font-weight: 600; color: #667eea; border-bottom: 2px solid #667eea;">Measured</th>
-                        <th style="padding: 8px; text-align: center; font-weight: 600; color: #667eea; border-bottom: 2px solid #667eea;">Standard Range</th>
-                        <th style="padding: 8px; text-align: center; font-weight: 600; color: #667eea; border-bottom: 2px solid #667eea;">Match</th>
-                    </tr>`;
+        function updateTime() {
+            if (allData.length === 0) return;
             
-            const comparisons = [
-                { label: 'Peak Current (A)', measured: fault.metrics.peakI.toFixed(0), param: 'peakI' },
-                { label: 'Rise Time (ms)', measured: fault.metrics.riseTime.toFixed(2), param: 'riseTime' },
-                { label: 'Duration (ms)', measured: fault.metrics.duration.toFixed(0), param: 'duration' },
-                { label: 'Voltage Dip (%)', measured: (100 - fault.metrics.vDip).toFixed(1), param: 'vDip' },
-                { label: 'THD (%)', measured: fault.metrics.thd.toFixed(1), param: 'thd' },
-                { label: 'Phase Asymmetry (%)', measured: fault.metrics.asym.toFixed(1), param: 'asym' }
-            ];
-            
-            comparisons.forEach(comp => {
-                const chars = fault.primary.characteristics[comp.param];
-                if (!chars) return;
-                
-                const val = parseFloat(comp.measured);
-                const match = val >= chars.min && val <= chars.max;
-                const matchStr = match ? '✓ MATCH' : val < chars.min ? '← LOW' : '→ HIGH';
-                const color = match ? '#4caf50' : '#f44336';
-                
-                html += `<tr style="border-bottom: 1px solid #e0e0e0;">
-                    <td style="padding: 8px;">${comp.label}</td>
-                    <td style="padding: 8px; text-align: center; font-weight: 600; color: #667eea;">${comp.measured}</td>
-                    <td style="padding: 8px; text-align: center;">${chars.min} - ${chars.max}</td>
-                    <td style="padding: 8px; text-align: center; color: ${color}; font-weight: 600;">${matchStr}</td>
-                </tr>`;
-            });
-            
-            html += `</table>
-                
-                <h3 style="color: #333; font-size: 12px; margin-bottom: 8px;">📚 IEEE/IEC Standards Referenced:</h3>
-                <ul style="margin-left: 20px; font-size: 10px; color: #666; line-height: 1.6;">
-                    <li>IEEE C62.92.2 - Guidelines for Protective Relays</li>
-                    <li>IEEE C37.010 - Application of High-Voltage Circuit Breakers</li>
-                    <li>IEC 60255 - Electrical Relays - Measurement & Test Methods</li>
-                    <li>IEC 61000 - Electromagnetic Compatibility (EMC)</li>
-                    <li>CIGRE WG37.43 - Fault Characteristics & Transient Behavior</li>
-                    <li>SPLN 52-1 s/d 6 - PLN Distribution Code (Indonesia)</li>
-                </ul>
-            </div>`;
-            
-            document.getElementById('comparisonDetail').innerHTML = html;
-        }
-        
-        function syncAll() {
             const timeP = parseFloat(document.getElementById('timeRange').value);
             const startTime = (timeP / 100) * maxDuration;
-            const windowTime = maxDuration * (zoomLevel || 0.2);
-            const endTime = Math.min(startTime + windowTime, maxDuration);
+            const windowDuration = maxDuration * (0.05 / zoomLevel);
+            const endTime = Math.min(startTime + windowDuration, maxDuration);
             
-            document.getElementById('timeDisplay').textContent = startTime.toFixed(2) + 's';
+            document.getElementById('timeStart').textContent = startTime.toFixed(2) + 's';
+            document.getElementById('timeDuration').textContent = (endTime - startTime).toFixed(2) + 's';
             
             const filtered = allData.filter(d => d.t / 1e6 >= startTime && d.t / 1e6 <= endTime);
             if (filtered.length === 0) return;
@@ -915,7 +980,7 @@
             const ib = data.map(d => Math.abs(d.ib * iScale));
             const ic = data.map(d => Math.abs(d.ic * iScale));
             const maxI = [Math.max(...ia), Math.max(...ib), Math.max(...ic)];
-            return (Math.max(...maxI) - Math.min(...maxI)) / Math.max(...maxI) * 100;
+            return (Math.max(...maxI) - Math.min(...maxI)) / (Math.max(...maxI) || 1) * 100;
         }
         
         function calculateTHD(data) {
@@ -926,48 +991,98 @@
                 const slope = (currents[i + 1] - currents[i - 1]) / 2;
                 variance += slope * slope;
             }
-            return Math.min(100, (Math.sqrt(variance / currents.length) / mean) * 100);
+            return Math.min(100, (Math.sqrt(variance / currents.length) / (mean || 1)) * 100);
         }
         
         function updateCharts(filtered, startTime, endTime) {
-            const labels = filtered.map(d => (d.t / 1e6).toFixed(2));
-            
-            if (!document.getElementById('waveform').classList.contains('active')) return;
+            const labels = filtered.map((d, i) => i % Math.floor(filtered.length / 10) === 0 ? (d.t / 1e6).toFixed(3) : '');
             
             const vDataset = [
-                { label: 'VA', data: filtered.map(d => d.va * vScale / 1000), borderColor: '#667eea', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
-                { label: 'VB', data: filtered.map(d => d.vb * vScale / 1000), borderColor: '#ed64a6', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
-                { label: 'VC', data: filtered.map(d => d.vc * vScale / 1000), borderColor: '#ff9a42', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false }
+                { label: 'VA', data: filtered.map(d => d.va * vScale / 1000), borderColor: '#667eea', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
+                { label: 'VB', data: filtered.map(d => d.vb * vScale / 1000), borderColor: '#ed64a6', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
+                { label: 'VC', data: filtered.map(d => d.vc * vScale / 1000), borderColor: '#ff9a42', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false }
             ];
             
-            if (!window.chartVolt) {
-                window.chartVolt = new Chart(document.getElementById('voltageChart'), {
-                    type: 'line', data: { labels, datasets: vDataset },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { font: { size: 9 } } } }, scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' } }, y: { grid: { color: 'rgba(0,0,0,0.05)' } } } }
+            if (!charts.volt) {
+                charts.volt = new Chart(document.getElementById('voltageChart'), {
+                    type: 'line',
+                    data: { labels, datasets: vDataset },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: {
+                            legend: { display: true, labels: { font: { size: 9 } } },
+                            filler: { propagate: true }
+                        },
+                        scales: {
+                            x: { grid: { drawBorder: false, color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } },
+                            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } }
+                        }
+                    }
                 });
             } else {
-                window.chartVolt.data.labels = labels;
-                window.chartVolt.data.datasets = vDataset;
-                window.chartVolt.update('none');
+                charts.volt.data.labels = labels;
+                charts.volt.data.datasets = vDataset;
+                charts.volt.update('none');
             }
             
             const iDataset = [
-                { label: 'IA', data: filtered.map(d => d.ia * iScale), borderColor: '#667eea', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
-                { label: 'IB', data: filtered.map(d => d.ib * iScale), borderColor: '#ed64a6', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
-                { label: 'IC', data: filtered.map(d => d.ic * iScale), borderColor: '#ff9a42', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
-                { label: 'IN', data: filtered.map(d => d.in * iScale), borderColor: '#4caf50', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false, borderDash: [4,4] }
+                { label: 'IA', data: filtered.map(d => d.ia * iScale), borderColor: '#667eea', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
+                { label: 'IB', data: filtered.map(d => d.ib * iScale), borderColor: '#ed64a6', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
+                { label: 'IC', data: filtered.map(d => d.ic * iScale), borderColor: '#ff9a42', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
+                { label: 'IN', data: filtered.map(d => d.in * iScale), borderColor: '#4caf50', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false, borderDash: [3,3] }
             ];
             
-            if (!window.chartCurr) {
-                window.chartCurr = new Chart(document.getElementById('currentChart'), {
-                    type: 'line', data: { labels, datasets: iDataset },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { font: { size: 9 } } } }, scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' } }, y: { grid: { color: 'rgba(0,0,0,0.05)' } } } }
+            if (!charts.curr) {
+                charts.curr = new Chart(document.getElementById('currentChart'), {
+                    type: 'line',
+                    data: { labels, datasets: iDataset },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: {
+                            legend: { display: true, labels: { font: { size: 9 } } },
+                            filler: { propagate: true }
+                        },
+                        scales: {
+                            x: { grid: { drawBorder: false, color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } },
+                            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 8 } } }
+                        }
+                    }
                 });
             } else {
-                window.chartCurr.data.labels = labels;
-                window.chartCurr.data.datasets = iDataset;
-                window.chartCurr.update('none');
+                charts.curr.data.labels = labels;
+                charts.curr.data.datasets = iDataset;
+                charts.curr.update('none');
             }
+        }
+        
+        function zoomIn() {
+            if (zoomLevel < 10) { zoomLevel *= 1.5; updateTime(); }
+        }
+        
+        function zoomOut() {
+            if (zoomLevel > 1) { zoomLevel /= 1.5; updateTime(); }
+        }
+        
+        function resetZoom() {
+            zoomLevel = 1;
+            document.getElementById('timeRange').value = 0;
+            updateTime();
+        }
+        
+        function panLeft() {
+            let val = parseFloat(document.getElementById('timeRange').value);
+            document.getElementById('timeRange').value = Math.max(0, val - 5);
+            updateTime();
+        }
+        
+        function panRight() {
+            let val = parseFloat(document.getElementById('timeRange').value);
+            document.getElementById('timeRange').value = Math.min(100, val + 5);
+            updateTime();
         }
         
         function switchTab(tab) {
@@ -975,6 +1090,9 @@
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
             event.target.classList.add('active');
+            setTimeout(() => {
+                if (tab === 'waveform') updateTime();
+            }, 100);
         }
     </script>
 </body>
