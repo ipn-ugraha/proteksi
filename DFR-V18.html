@@ -314,6 +314,47 @@
   .empty-state svg { width: 48px; height: 48px; stroke: var(--text3); margin: 0 auto 12px; display: block; }
   .empty-state p { font-size: 14px; }
 
+  /* MULTI-SELECT MERK */
+  .multi-select-wrap { position: relative; }
+  .multi-select-btn {
+    height: 34px; padding: 0 10px; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 7px;
+    color: var(--text); font-family: var(--sans); font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; white-space: nowrap;
+    min-width: 130px; justify-content: space-between;
+    transition: border-color 0.2s;
+  }
+  .multi-select-btn:hover, .multi-select-btn.open { border-color: var(--accent); }
+  .multi-select-panel {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 8px; z-index: 200; min-width: 200px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .multi-select-panel.open { display: block; }
+  .merk-actions {
+    display: flex; gap: 6px; padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .merk-actions button {
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    background: var(--bg4); border: 1px solid var(--border2);
+    color: var(--text2); cursor: pointer; font-family: var(--sans);
+  }
+  .merk-actions button:hover { color: var(--text); border-color: var(--accent); }
+  .merk-list {
+    max-height: 260px; overflow-y: auto; padding: 6px 0;
+  }
+  .merk-opt {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 12px; font-size: 12px; color: var(--text2);
+    cursor: pointer; transition: background 0.1s;
+  }
+  .merk-opt:hover { background: var(--bg3); color: var(--text); }
+  .merk-opt input { accent-color: var(--accent); cursor: pointer; }
+  .merk-opt input:checked + span, .merk-opt:has(input:checked) { color: var(--text); }
+
   /* FOOTER */
   .footer {
     margin: 20px 24px 0;
@@ -421,30 +462,40 @@
     <option value="UPT PROBOLINGGO">UPT PROBOLINGGO</option>
     <option value="UPT SURABAYA">UPT SURABAYA</option>
   </select>
-  <select id="filterMerk" onchange="renderHosts()">
-
-    <option value="all">Semua Merk</option>
-    <option value="Baoding LBD Electric">Baoding LBD Electric</option>
-    <option value="E-MAX">E-MAX</option>
-    <option value="HATHAWAY">HATHAWAY</option>
-    <option value="HATHAWAY DFR II">HATHAWAY DFR II</option>
-    <option value="HATHAWAY DFR II B">HATHAWAY DFR II B</option>
-    <option value="HATHAWAY IDM">HATHAWAY IDM</option>
-    <option value="HATHAWAY IDM T3">HATHAWAY IDM T3</option>
-    <option value="HATHAWAY IDM T5">HATHAWAY IDM T5</option>
-    <option value="HATHAWAY LSU">HATHAWAY LSU</option>
-    <option value="HATHAWAY LSU 1">HATHAWAY LSU 1</option>
-    <option value="HATHAWAY LSU 2">HATHAWAY LSU 2</option>
-    <option value="HATHAWAY/IDM T3">HATHAWAY/IDM T3</option>
-    <option value="HATHAWAY/IDM T5">HATHAWAY/IDM T5</option>
-    <option value="LEM">LEM</option>
-    <option value="LEM BEN 500">LEM BEN 500</option>
-    <option value="QUALITROL">QUALITROL</option>
-    <option value="QUALITROL/HATHAWAY">QUALITROL/HATHAWAY</option>
-    <option value="Qualitrol">Qualitrol</option>
-    <option value="ROCHESTER /">ROCHESTER /</option>
-    <option value="SIEMENS">SIEMENS</option>
-  </select>
+  <div class="multi-select-wrap" id="merkDropWrap">
+    <button class="multi-select-btn" id="merkDropBtn" onclick="toggleMerkDrop(event)" type="button">
+      <span id="merkBtnLabel">Semua Merk</span>
+      <svg style="width:12px;height:12px;stroke:currentColor;margin-left:4px" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="multi-select-panel" id="merkPanel">
+      <div class="merk-actions">
+        <button onclick="setAllMerks(true)" type="button">Pilih Semua</button>
+        <button onclick="setAllMerks(false)" type="button">Hapus Semua</button>
+      </div>
+      <div class="merk-list">
+          <label class="merk-opt"><input type="checkbox" value="Baoding LBD Electric" onchange="updateMerkLabel();renderHosts()"> Baoding LBD Electric</label>
+          <label class="merk-opt"><input type="checkbox" value="E-MAX" onchange="updateMerkLabel();renderHosts()"> E-MAX</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY" onchange="updateMerkLabel();renderHosts()"> HATHAWAY</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY DFR II" onchange="updateMerkLabel();renderHosts()"> HATHAWAY DFR II</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY DFR II B" onchange="updateMerkLabel();renderHosts()"> HATHAWAY DFR II B</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY IDM" onchange="updateMerkLabel();renderHosts()"> HATHAWAY IDM</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY IDM T3" onchange="updateMerkLabel();renderHosts()"> HATHAWAY IDM T3</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY IDM T5" onchange="updateMerkLabel();renderHosts()"> HATHAWAY IDM T5</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY LSU" onchange="updateMerkLabel();renderHosts()"> HATHAWAY LSU</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY LSU 1" onchange="updateMerkLabel();renderHosts()"> HATHAWAY LSU 1</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY LSU 2" onchange="updateMerkLabel();renderHosts()"> HATHAWAY LSU 2</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY/IDM T3" onchange="updateMerkLabel();renderHosts()"> HATHAWAY/IDM T3</label>
+          <label class="merk-opt"><input type="checkbox" value="HATHAWAY/IDM T5" onchange="updateMerkLabel();renderHosts()"> HATHAWAY/IDM T5</label>
+          <label class="merk-opt"><input type="checkbox" value="LEM" onchange="updateMerkLabel();renderHosts()"> LEM</label>
+          <label class="merk-opt"><input type="checkbox" value="LEM BEN 500" onchange="updateMerkLabel();renderHosts()"> LEM BEN 500</label>
+          <label class="merk-opt"><input type="checkbox" value="QUALITROL" onchange="updateMerkLabel();renderHosts()"> QUALITROL</label>
+          <label class="merk-opt"><input type="checkbox" value="QUALITROL/HATHAWAY" onchange="updateMerkLabel();renderHosts()"> QUALITROL/HATHAWAY</label>
+          <label class="merk-opt"><input type="checkbox" value="Qualitrol" onchange="updateMerkLabel();renderHosts()"> Qualitrol</label>
+          <label class="merk-opt"><input type="checkbox" value="ROCHESTER /" onchange="updateMerkLabel();renderHosts()"> ROCHESTER /</label>
+          <label class="merk-opt"><input type="checkbox" value="SIEMENS" onchange="updateMerkLabel();renderHosts()"> SIEMENS</label>
+      </div>
+    </div>
+  </div>
 
   <div class="view-toggle">
     <button class="view-btn active" id="btnCard" onclick="setView('card')">
@@ -777,14 +828,14 @@ function getFiltered() {
   const search = document.getElementById('searchBox').value.toLowerCase();
   const statusF = document.getElementById('filterStatus').value;
   const uptF = document.getElementById('filterUPT').value;
-  const merkF = document.getElementById('filterMerk').value;
+  const merkChecked = Array.from(document.querySelectorAll('#merkPanel input[type=checkbox]:checked')).map(el => el.value);
   return hosts.filter(h => {
     const upt = (h.upt||'').toLowerCase();
     const merk = (h.merk||'').toLowerCase();
     if (search && !h.ip.includes(search) && !h.gi.toLowerCase().includes(search) && !h.bay.toLowerCase().includes(search) && !upt.includes(search) && !merk.includes(search)) return false;
     if (statusF !== 'all' && h.status !== statusF) return false;
     if (uptF !== 'all' && (h.upt||'') !== uptF) return false;
-    if (merkF !== 'all' && (h.merk||'') !== merkF) return false;
+    if (merkChecked.length > 0 && !merkChecked.includes(h.merk||'')) return false;
     return true;
   });
 }
@@ -939,8 +990,9 @@ async function runScan() {
   hosts.forEach(h => { h.status = 'pending'; h.latency = null; h.loss = null; h.lastUp = null; });
   renderHosts(); updateSummary();
   const total = hosts.length;
+  const BATCH = 8;
   for (let i = 0; i < total; i++) {
-    await new Promise(r => setTimeout(r, 35 + Math.random() * 45));
+    await new Promise(r => setTimeout(r, 20 + Math.random() * 30));
     const h = hosts[i];
     h.status = randomStatus();
     h.latency = randomLatency(h.status);
@@ -949,7 +1001,11 @@ async function runScan() {
     const pct = Math.round(((i + 1) / total) * 100);
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressLabel').textContent = `Scanning ${h.ip} (${h.gi}) … ${pct}%`;
-    if (i % 4 === 0) { renderHosts(); updateSummary(); }
+    // Render setiap BATCH host, pakai rAF agar tidak blokir browser
+    if ((i + 1) % BATCH === 0 || i === total - 1) {
+      await new Promise(r => requestAnimationFrame(r));
+      updateSummary();
+    }
   }
   renderHosts(); updateSummary();
   const now = new Date();
@@ -967,6 +1023,34 @@ async function runScan() {
   scanRunning = false;
 }
 
+function toggleMerkDrop(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('merkPanel');
+  const btn = document.getElementById('merkDropBtn');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+function setAllMerks(checked) {
+  document.querySelectorAll('#merkPanel input[type=checkbox]').forEach(cb => cb.checked = checked);
+  updateMerkLabel();
+  renderHosts();
+}
+function updateMerkLabel() {
+  const checked = document.querySelectorAll('#merkPanel input[type=checkbox]:checked');
+  const total = document.querySelectorAll('#merkPanel input[type=checkbox]').length;
+  const lbl = document.getElementById('merkBtnLabel');
+  if (checked.length === 0 || checked.length === total) lbl.textContent = 'Semua Merk';
+  else if (checked.length === 1) lbl.textContent = checked[0].value;
+  else lbl.textContent = checked.length + ' merk dipilih';
+}
+document.addEventListener('click', (e) => {
+  if (!document.getElementById('merkDropWrap').contains(e.target)) {
+    document.getElementById('merkPanel').classList.remove('open');
+    document.getElementById('merkDropBtn').classList.remove('open');
+  }
+});
+// Patch renderHosts call from checkbox change to also update label
 let autoScanTimer = null;
 let autoScanInterval = 0;
 let autoCountdownRemaining = 0;
